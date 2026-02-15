@@ -1,0 +1,122 @@
+{% extends 'gym_website/base.html' %}
+
+{% block title %}Contact - MSCUBEGYM{% endblock %}
+
+{% block content %}
+    <!-- Page Header -->
+    <section class="relative min-h-[50vh] flex items-center justify-center bg-gradient-to-br from-dark-bg to-card-bg overflow-hidden pt-20">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(107,125,157,0.1),transparent_70%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-dark-bg/80 pointer-events-none"></div>
+        <div class="container max-w-[1400px] mx-auto px-5 relative z-10 text-center">
+            <div class="animate-fade-in-up">
+                <h1 class="text-4xl md:text-6xl font-black tracking-wider mb-4 bg-gradient-to-br from-white to-primary bg-clip-text text-transparent pb-2">Contact Us</h1>
+                <p class="text-lg md:text-xl text-text-muted max-w-3xl mx-auto leading-relaxed">We'd love to hear from you. Reach out and start your fitness journey today!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Information -->
+    <section class="py-24 bg-dark-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Get In <span class="text-primary">Touch</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Visit us or reach out through any of these channels</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📍</div>
+                    <h3 class="text-xl font-bold mb-3">Location</h3>
+                    <p class="text-text-secondary leading-relaxed">Inaruwa Municipality - 1<br>Sunsari, Koshi Province<br>Nepal</p>
+                </div>
+
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📞</div>
+                    <h3 class="text-xl font-bold mb-3">Phone</h3>
+                    <p class="text-text-secondary leading-relaxed">9862361278<br>9842124920</p>
+                </div>
+
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">✉️</div>
+                    <h3 class="text-xl font-bold mb-3">Email</h3>
+                    <p class="text-text-secondary leading-relaxed break-all">mscubefitness@gmail.com</p>
+                </div>
+
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🕐</div>
+                    <h3 class="text-xl font-bold mb-3">Hours</h3>
+                    <p class="text-text-secondary leading-relaxed">Sunday - Friday<br>5:00 AM - 9:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Form -->
+    <section class="py-24 bg-section-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Send Us a <span class="text-primary">Message</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Fill out the form below and we'll get back to you soon</p>
+            </div>
+
+            <div class="max-w-3xl mx-auto">
+                <form class="flex flex-col gap-6" id="contactForm" onsubmit="return handleContactSubmit(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="flex flex-col gap-2">
+                            <label for="name" class="font-semibold text-text-primary">Full Name</label>
+                            <input type="text" id="name" name="name" placeholder="Your full name" required class="w-full bg-card-bg border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted">
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <label for="phone" class="font-semibold text-text-primary">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" placeholder="Your phone number" required class="w-full bg-card-bg border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="email" class="font-semibold text-text-primary">Email Address</label>
+                        <input type="email" id="email" name="email" placeholder="Your email address" class="w-full bg-card-bg border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition-colors placeholder:text-text-muted">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="interest" class="font-semibold text-text-primary">I'm Interested In</label>
+                        <div class="relative">
+                            <select id="interest" name="interest" class="w-full bg-card-bg border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer">
+                                <option value="">Select an option</option>
+                                <option value="membership">Gym Membership</option>
+                                <option value="personal-training">Personal Training</option>
+                                <option value="group-fitness">Group Fitness</option>
+                                <option value="strength">Strength Training</option>
+                                <option value="general">General Inquiry</option>
+                            </select>
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary">▼</div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="message" class="font-semibold text-text-primary">Message</label>
+                        <textarea id="message" name="message" placeholder="Tell us how we can help you..." required class="w-full bg-card-bg border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-primary transition-colors min-h-[140px] resize-y placeholder:text-text-muted"></textarea>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="inline-block bg-primary text-white px-10 py-3.5 rounded-lg font-bold hover:bg-accent transition-all transform hover:-translate-y-0.5 shadow-md w-full md:w-auto">Send Message</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+{% endblock %}
+
+{% block extra_scripts %}
+    <script>
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const name = form.querySelector('#name').value.trim();
+            if (name) {
+                alert('Thank you, ' + name + '! Your message has been received. We will get back to you soon.');
+                form.reset();
+            }
+            return false;
+        }
+    </script>
+{% endblock %}

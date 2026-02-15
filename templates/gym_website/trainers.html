@@ -1,0 +1,78 @@
+{% extends 'gym_website/base.html' %}
+{% load static %}
+
+{% block title %}Trainers - MSCUBEGYM{% endblock %}
+
+{% block content %}
+    <!-- Page Header -->
+    <section class="relative min-h-[50vh] flex items-center justify-center bg-gradient-to-br from-dark-bg to-card-bg overflow-hidden pt-20">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(107,125,157,0.1),transparent_70%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-dark-bg/80 pointer-events-none"></div>
+        <div class="container max-w-[1400px] mx-auto px-5 relative z-10 text-center">
+            <div class="animate-fade-in-up">
+                <h1 class="text-4xl md:text-6xl font-black tracking-wider mb-4 bg-gradient-to-br from-white to-primary bg-clip-text text-transparent pb-2">Our Trainers</h1>
+                <p class="text-lg md:text-xl text-text-muted max-w-3xl mx-auto leading-relaxed">Train with certified professionals dedicated to your transformation</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trainers Section -->
+    <section class="py-24 bg-dark-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Meet Our <span class="text-primary">Expert Trainers</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Experienced coaches who will guide you every step of the way</p>
+            </div>
+
+            <div class="space-y-12">
+                <!-- Trainer 1 -->
+                <div class="bg-card-bg rounded-2xl overflow-hidden border border-border transition-all hover:-translate-y-2 hover:border-primary grid grid-cols-1 md:grid-cols-[350px_1fr] group" id="simanta">
+                    <div class="h-full min-h-[350px] bg-gradient-to-br from-[#6b7d9d] to-[#8a9bb5] relative overflow-hidden">
+                        <!-- Replace src with actual image path if available, e.g. static/images/trainer1.jpg -->
+                        <div class="absolute inset-0 flex items-center justify-center text-dark-bg opacity-30 text-8xl">💪</div>
+                        <img src="https://images.unsplash.com/photo-1567598508481-65985586e291?q=80&w=2070&auto=format&fit=crop" alt="Simanta Sapkota" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" onerror="this.style.display='none'">
+                    </div>
+                    <div class="p-8 md:p-12 flex flex-col justify-center">
+                        <h3 class="text-3xl font-bold mb-2">Simanta Sapkota</h3>
+                        <p class="text-primary font-bold text-lg mb-2">Head Strength Coach</p>
+                        <p class="text-text-muted text-sm mb-6">4+ Years Experience</p>
+                        <p class="text-text-secondary leading-relaxed text-lg mb-6">Simanta is a dedicated strength coach focusing on functional lifts and progressive overload. He helps members build consistent habits and reach measurable goals. He specializes in programming for hypertrophy, strength, and injury prevention.</p>
+                        <div class="flex gap-4">
+                            <span class="px-4 py-1.5 bg-section-bg rounded-full text-sm text-text-muted border border-border">Hypertrophy</span>
+                            <span class="px-4 py-1.5 bg-section-bg rounded-full text-sm text-text-muted border border-border">Strength</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trainer 2 -->
+                <div class="bg-card-bg rounded-2xl overflow-hidden border border-border transition-all hover:-translate-y-2 hover:border-primary grid grid-cols-1 md:grid-cols-[350px_1fr] group" id="avinash">
+                    <div class="h-full min-h-[350px] bg-gradient-to-br from-[#6b7d9d] to-[#8a9bb5] relative overflow-hidden">
+                         <div class="absolute inset-0 flex items-center justify-center text-dark-bg opacity-30 text-8xl">🏋️</div>
+                        <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop" alt="Avinash Mehta" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" onerror="this.style.display='none'">
+                    </div>
+                    <div class="p-8 md:p-12 flex flex-col justify-center">
+                        <h3 class="text-3xl font-bold mb-2">Avinash Mehta</h3>
+                        <p class="text-primary font-bold text-lg mb-2">Power Training Coach</p>
+                        <p class="text-text-muted text-sm mb-6">4+ Years Experience</p>
+                        <p class="text-text-secondary leading-relaxed text-lg mb-6">Avinash specializes in power development and explosive training. He builds sport-specific programs and focuses heavily on technique, mobility, and progression to improve athletic performance.</p>
+                        <div class="flex gap-4">
+                            <span class="px-4 py-1.5 bg-section-bg rounded-full text-sm text-text-muted border border-border">Power</span>
+                            <span class="px-4 py-1.5 bg-section-bg rounded-full text-sm text-text-muted border border-border">Athletics</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 bg-section-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Want to Train With <span class="text-primary">Us?</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto mb-10">Get in touch and start your journey with our expert coaches</p>
+                <a href="{% url 'contact' %}" class="inline-block bg-primary text-white px-10 py-3.5 rounded-lg font-bold hover:bg-accent transition-all transform hover:-translate-y-0.5 shadow-md">Contact Us Today</a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

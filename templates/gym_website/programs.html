@@ -1,0 +1,86 @@
+{% extends 'gym_website/base.html' %}
+{% load static %}
+
+{% block title %}Programs - MSCUBEGYM{% endblock %}
+
+{% block content %}
+    <!-- Page Header -->
+    <section class="relative min-h-[50vh] flex items-center justify-center bg-gradient-to-br from-dark-bg to-card-bg overflow-hidden pt-20">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(107,125,157,0.1),transparent_70%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-dark-bg/80 pointer-events-none"></div>
+        <div class="container max-w-[1400px] mx-auto px-5 relative z-10 text-center">
+            <div class="animate-fade-in-up">
+                <h1 class="text-4xl md:text-6xl font-black tracking-wider mb-4 bg-gradient-to-br from-white to-primary bg-clip-text text-transparent pb-2">Training Programs</h1>
+                <p class="text-lg md:text-xl text-text-muted max-w-3xl mx-auto leading-relaxed">Choose the path that fits your goals. From beginners to elite athletes, we have something for everyone.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs Grid -->
+    <section class="py-24 bg-dark-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Our <span class="text-primary">Offerings</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Flexible plans designed for your success</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Program 1 -->
+                <div class="bg-card-bg p-8 rounded-2xl border border-border flex flex-col items-center text-center transition-all hover:-translate-y-2 hover:border-primary hover:shadow-xl group relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="bg-section-bg p-4 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <span class="text-4xl">💪</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">General Fitness</h3>
+                    <p class="text-text-secondary mb-6 flex-1">Perfect for beginners or those looking to stay active. Includes access to all cardio and strength equipment.</p>
+                    <ul class="text-left w-full mb-8 space-y-3 text-text-muted text-sm">
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Full Gym Access</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Locker Room Access</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Free WiFi</li>
+                    </ul>
+                    <a href="{% url 'contact' %}" class="inline-block bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-2 rounded-full font-bold transition-all w-full">Learn More</a>
+                </div>
+
+                <!-- Program 2 -->
+                <div class="bg-card-bg p-8 rounded-2xl border-2 border-primary flex flex-col items-center text-center transition-all hover:-translate-y-2 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] group relative overflow-hidden transform scale-105 z-10">
+                    <div class="absolute top-5 right-5 text-yellow-500 text-2xl animate-pulse">⭐</div>
+                    <div class="bg-primary/20 p-4 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <span class="text-4xl">🏋️‍♂️</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3 text-white">Strength & Power</h3>
+                    <p class="text-text-secondary mb-6 flex-1">For those serious about lifting. Includes powerlifting zone access and specialized coaching sessions.</p>
+                    <ul class="text-left w-full mb-8 space-y-3 text-text-muted text-sm">
+                        <li class="flex items-center"><span class="text-primary mr-2">✓</span> All General Perks</li>
+                        <li class="flex items-center"><span class="text-primary mr-2">✓</span> Power Rack Priority</li>
+                        <li class="flex items-center"><span class="text-primary mr-2">✓</span> 2x Personal Training/Mo</li>
+                    </ul>
+                    <a href="{% url 'contact' %}" class="inline-block bg-primary text-white border-2 border-primary hover:bg-primary/90 px-8 py-2 rounded-full font-bold transition-all w-full shadow-lg">Most Popular</a>
+                </div>
+
+                <!-- Program 3 -->
+                <div class="bg-card-bg p-8 rounded-2xl border border-border flex flex-col items-center text-center transition-all hover:-translate-y-2 hover:border-primary hover:shadow-xl group relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="bg-section-bg p-4 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
+                        <span class="text-4xl">🧘</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3">Group Classes</h3>
+                    <p class="text-text-secondary mb-6 flex-1">Join our energetic community classes. Yoga, HIIT, Zoomba, and more available daily.</p>
+                    <ul class="text-left w-full mb-8 space-y-3 text-text-muted text-sm">
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Unlimited Classes</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Priority Booking</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> Community Events</li>
+                    </ul>
+                    <a href="{% url 'contact' %}" class="inline-block bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-2 rounded-full font-bold transition-all w-full">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Memberships Table Scroller if needed -->
+    <section class="py-24 bg-section-bg">
+         <div class="max-w-[1400px] mx-auto px-5 text-center">
+            <h2 class="text-3xl font-bold mb-8">Not sure which one?</h2>
+            <a href="{% url 'contact' %}" class="text-primary hover:text-white hover:underline transition-colors text-lg">Talk to our consultants for a free assessment →</a>
+         </div>
+    </section>
+{% endblock %}

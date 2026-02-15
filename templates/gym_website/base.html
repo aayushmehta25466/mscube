@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MSCUBEGYM - Transform Your Body{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static "css/output.css" %}">
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-dark-bg text-text-primary font-sans leading-relaxed overflow-x-hidden">
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 bg-dark-bg/95 backdrop-blur-sm z-50 border-b border-border">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center gap-3 text-2xl font-bold tracking-wide">
+                    <div class="flex items-center">
+                        <img src="{% static "images/logo.png" %}" alt="MSCUBEGYM Logo"
+                            class="w-[60px] h-[60px] object-contain">
+                    </div>
+                    <span class="text-text-primary">MSCUBEGYM</span>
+                </div>
+
+                <ul class="hidden md:flex list-none gap-8 items-center" id="navMenu">
+                    <li><a href="{% url 'index' %}"
+                            class="text-text-primary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'index' %}after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Home</a>
+                    </li>
+                        <li><a href="{% url 'about' %}"
+                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'about' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">About</a>
+                        </li>
+                        <li><a href="{% url 'programs' %}"
+                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'programs' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Programs</a>
+                        </li>
+                        <li><a href="{% url 'trainers' %}"
+                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'trainers' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Trainers</a>
+                        </li>
+                        <li><a href="{% url 'events' %}"
+                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'events' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Events</a>
+                        </li>
+                        <li><a href="{% url 'notifications' %}"
+                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'notifications' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Notifications</a>
+                        </li>
+
+                </ul>
+
+                <a href="{% url 'contact' %}"
+                    class="hidden md:inline-block bg-primary text-white px-7 py-3 rounded-lg font-semibold transition-all hover:bg-accent hover:-translate-y-0.5 shadow-md hover:shadow-lg">Contact
+                    Us</a>
+
+                <div class="flex flex-col gap-1.5 cursor-pointer md:hidden" id="hamburger">
+                    <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>
+                    <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>
+                    <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer class="bg-dark-bg border-t border-border pt-16 pb-8">
+        <div class="max-w-[1400px] mx-auto px-5 text-center">
+            <div class="flex flex-col items-center justify-center mb-8">
+                <div class="mb-4">
+                    <div class="flex items-center justify-center gap-3 text-2xl font-bold mb-4">
+                        <div class="flex items-center">
+                            <img src="{% static 'images/logo.png' %}" alt="MSCUBEGYM Logo"
+                                class="w-[50px] h-[50px] object-contain">
+                        </div>
+                        <span>MSCUBEGYM</span>
+                    </div>
+                    <p class="text-text-secondary"><strong>Place to craft your body.</strong></p>
+                </div>
+            </div>
+
+            <div class="border-t border-white/10 border-b py-8 mb-6">
+                <h4 class="text-xl font-semibold mb-4 text-white">Contact Us At:</h4>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 flex-wrap">
+                    <p class="text-white/80 transition-colors hover:text-white">📞 9862361278, 9842124920</p>
+                    <p class="text-white/80 transition-colors hover:text-white">✉️ mscubefitness@gmail.com</p>
+                    <p class="text-white/80 transition-colors hover:text-white">📷 Instagram: MScube_fitness(GYM)</p>
+                </div>
+            </div>
+
+            <div class="text-text-muted mt-4">
+                <p>&copy; Established in 2026</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/app.js' %}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

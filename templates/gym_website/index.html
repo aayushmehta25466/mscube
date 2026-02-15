@@ -1,0 +1,195 @@
+{% extends 'gym_website/base.html' %}
+{% load static %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-dark-bg to-card-bg overflow-hidden pt-20">
+        <!-- Grid Pattern Overlay can be added via CSS or inline style, skipping complex SVG for brevity or using a simple pattern class -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(107,125,157,0.1),transparent_70%)] pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent to-dark-bg/80 pointer-events-none"></div>
+        
+        <div class="container max-w-[1400px] mx-auto px-5 relative z-10 text-center">
+            <div class="animate-fade-in-up">
+                <div class="mb-8 flex justify-center">
+                    <div class="flex justify-center items-center mb-4">
+
+                        <!-- Repla{% static 'images/logo.png' %} with your actual logo file -->
+                        <img src="{% static 'images/logo.png' %}" alt="MSCUBE Logo" class="w-[180px] h-[180px] object-contain brightness-90">
+                    </div>
+                </div>
+                <h1 class="text-5xl md:text-7xl lg:text-8xl font-black tracking-wider mb-4 bg-gradient-to-br from-white to-primary bg-clip-text text-transparent pb-2">MSCUBEGYM</h1>
+                <h2 class="text-2xl md:text-4xl lg:text-5xl font-light text-text-secondary mb-8 tracking-widest">Unleash Your Strength</h2>
+                <p class="text-lg md:text-xl text-text-muted max-w-3xl mx-auto leading-relaxed mb-6">
+                    Transform your body, elevate your mind, and achieve the impossible.<br class="hidden md:inline">
+                    Join Nepal's most powerful fitness community today.
+                </p>
+                <div class="mt-8 flex flex-col md:flex-row gap-4 justify-center">
+                    <a href="{% url 'programs' %}" class="bg-primary text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-accent transition-all transform hover:-translate-y-1 shadow-lg">Start Your Journey</a>
+                    <a href="{% url 'about' %}" class="border-2 border-primary text-text-primary px-8 py-3 rounded-lg font-bold text-lg hover:bg-primary hover:text-white transition-all transform hover:-translate-y-1">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="py-24 bg-section-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4">About <span class="text-primary">MSCUBEGYM</span></h2>
+            </div>
+            
+            <div class="grid gap-16 md:grid-cols-2 lg:gap-20">
+                <div class="flex flex-col justify-center text-center md:text-left">
+                    <p class="text-xl md:text-2xl text-text-primary mb-6 leading-relaxed font-light">
+                        Namaste Everyone! Welcome to MSCUBEGYM, where fitness meets passion and transformation begins. 
+                        We are not just a gym; we are a community dedicated to empowering individuals to reach their 
+                        full potential through strength, endurance, and holistic wellness.
+                    </p>
+                    
+                    <p class="text-lg text-text-secondary mb-8 leading-relaxed">
+                                     We are the most disciplined and powerful gym in our district established in 2026.
+                      Our mission is to provide a supportive and motivating environment where eveyone seeks for betterment of their body and mindset.
+
+                    </p>
+                    
+                    <div class="flex gap-4 justify-center md:justify-start flex-wrap">
+                        <button class="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent transition-all transform hover:-translate-y-0.5 shadow-md">Our Story</button>
+                        <button class="bg-transparent text-text-primary border-2 border-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary hover:text-white transition-all transform hover:-translate-y-0.5">View Gallery</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-6">
+                    <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">👥</div>
+                        <div class="text-2xl md:text-3xl font-bold text-primary mb-2">Just starting</div>
+                        <div class="text-text-secondary">Active Members</div>
+                    </div>
+                    
+                    <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🏆</div>
+                        <div class="text-2xl md:text-3xl font-bold text-primary mb-2">Experienced</div>
+                        <div class="text-text-secondary">Expert Trainers</div>
+                    </div>
+                    
+                    <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group col-span-2 md:col-span-2">
+                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🕐</div>
+                        <div class="text-2xl md:text-3xl font-bold text-primary mb-2">5:00 AM - 09:00 PM</div>
+                        <div class="text-text-secondary">Access Available</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Programs Section -->
+    <section class="py-24 bg-dark-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Our <span class="text-primary">Programs</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Tailored fitness programs designed to help you achieve your goals</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-card-bg rounded-2xl overflow-hidden border border-border transition-all hover:-translate-y-1 hover:border-primary group">
+                    <div class="relative h-[300px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary to-secondary">
+                        <img src="https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=2070&auto=format&fit=crop" alt="Strength Training" class="w-full h-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute text-6xl bg-dark-bg/80 p-5 rounded-full backdrop-blur-sm">💪</div>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-4">Strength Training</h3>
+                        <p class="text-text-secondary mb-6 leading-relaxed">Build muscle mass and increase overall strength with our expert-designed programs.</p>
+                        <button class="text-primary font-semibold hover:text-accent transition-colors flex items-center gap-2 group-hover:translate-x-1">Learn More →</button>
+                    </div>
+                </div>
+                
+                <div class="bg-card-bg rounded-2xl overflow-hidden border border-border transition-all hover:-translate-y-1 hover:border-primary group">
+                    <div class="relative h-[300px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary to-secondary">
+                        <img src="https://images.unsplash.com/photo-1599058945522-28d584b6f0ff?q=80&w=2069&auto=format&fit=crop" alt="Cardio Training" class="w-full h-full object-cover opacity-70 transition-transform duration-500 group-hover:scale-110">
+                        <div class="absolute text-6xl bg-dark-bg/80 p-5 rounded-full backdrop-blur-sm">❤️</div>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-4">Cardio Training</h3>
+                        <p class="text-text-secondary mb-6 leading-relaxed">Improve cardiovascular health and endurance with high-intensity workouts.</p>
+                        <button class="text-primary font-semibold hover:text-accent transition-colors flex items-center gap-2 group-hover:translate-x-1">Learn More →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trainers Section -->
+    <section class="py-24 bg-section-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Meet Our <span class="text-primary">Expert Trainers</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Train with certified professionals dedicated to your transformation</p>
+
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                <a href="{% url 'trainers' %}#simanta" class="block group" data-name="Simanta Sapkota" data-specialty="Head Strength Coach" data-experience="4+ Years" data-bio="Simanta is a dedicated strength coach focusing on functional lifts and progressive overload. He loves helping members build consistent habits and reach their goals." data-img="https://images.unsplash.com/photo-1567598508481-65985586e291?q=80&w=2070&auto=format&fit=crop">
+                    <div class="bg-card-bg rounded-2xl overflow-hidden border border-border transition-all group-hover:-translate-y-1 group-hover:border-primary shadow-lg h-full">
+                        <div class="relative h-[400px] bg-gradient-to-br from-primary to-secondary overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1567598508481-65985586e291?q=80&w=2070&auto=format&fit=crop" alt="Simanta Sapkota" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                            <div class="absolute top-5 right-5 bg-dark-bg/90 px-4 py-2 rounded-full font-semibold text-sm backdrop-blur-md border border-white/10">4+ Years</div>
+                        </div>
+                        <div class="p-8 text-center">
+                            <h3 class="text-2xl font-bold mb-2">Simanta Sapkota</h3>
+                            <p class="text-text-secondary font-medium">Head Strength Coach</p>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="{% url 'trainers' %}#avinash" class="block group" data-name="Avinash Mehta" data-specialty="Power Training Coach" data-experience="4+ Years" data-bio="Avinash specializes in power development and explosive training. He builds sport-specific programs and focuses on technique and progression." data-img="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop">
+                    <div class="bg-card-bg rounded-2xl overflow-hidden border border-border transition-all group-hover:-translate-y-1 group-hover:border-primary shadow-lg h-full">
+                        <div class="relative h-[400px] bg-gradient-to-br from-primary to-secondary overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?q=80&w=2070&auto=format&fit=crop" alt="Avinash Mehta" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                            <div class="absolute top-5 right-5 bg-dark-bg/90 px-4 py-2 rounded-full font-semibold text-sm backdrop-blur-md border border-white/10">4+ Years</div>
+                        </div>
+                        <div class="p-8 text-center">
+                            <h3 class="text-2xl font-bold mb-2">Avinash Mehta</h3>
+                            <p class="text-text-secondary font-medium">Power Training Coach </p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="py-24 bg-dark-bg">
+        <div class="max-w-[1400px] mx-auto px-5">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-5xl font-bold mb-4">Get In <span class="text-primary">Touch</span></h2>
+                <p class="text-lg text-text-secondary max-w-3xl mx-auto">Ready to start your fitness journey? Visit us or reach out today</p>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📍</div>
+                    <h3 class="text-xl font-bold mb-3">Location</h3>
+                    <p class="text-text-secondary leading-relaxed">Inaruwa Municipality - 1<br>Sunsari, Koshi Province<br>Nepal</p>
+                </div>
+                
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">📞</div>
+                    <h3 class="text-xl font-bold mb-3">Phone</h3>
+                    <p class="text-text-secondary leading-relaxed">9862361278<br>9842124920</p>
+                </div>
+                
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">✉️</div>
+                    <h3 class="text-xl font-bold mb-3">Email</h3>
+                    <p class="text-text-secondary leading-relaxed break-all">mscubefitness@gmail.com</p>
+                </div>
+                
+                <div class="bg-card-bg p-8 rounded-2xl text-center border border-border transition-all hover:-translate-y-1 hover:border-primary shadow-lg group">
+                    <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">🕐</div>
+                    <h3 class="text-xl font-bold mb-3">Hours</h3>
+                    <p class="text-text-secondary leading-relaxed">Sunday - Friday<br>5:00 AM - 9:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+{% endblock %}
