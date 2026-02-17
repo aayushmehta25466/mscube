@@ -23,7 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('',include("gym_website.urls")),
     path('accounts/',include("accounts.urls")),
-    path('admin/',include("gym_management.urls"))
+    path('management/',include("gym_management.urls"))
 ]
 
 # Serve media files in development

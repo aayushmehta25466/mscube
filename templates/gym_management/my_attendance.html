@@ -1,0 +1,129 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}My Attendance - MScube Gym{% endblock %}
+{% block header_title %}Attendance History{% endblock %}
+
+{% block sidebar_menu %}
+<div class="mb-4">
+    <p class="px-3 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Main</p>
+    <a href="{% url 'gym_management:member_dashboard' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+        Dashboard
+    </a>
+    <a href="{% url 'gym_management:my_subscription' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors mt-1">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        My Subscription
+    </a>
+    <a href="{% url 'gym_management:my_attendance' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary mt-1">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Attendance
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-up">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Monthly Stats -->
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <span class="text-text-muted text-sm font-medium uppercase tracking-wider">This Month</span>
+                    <h3 class="text-3xl font-bold text-white mt-1">{{ attendance_this_month }} <span class="text-lg text-text-secondary font-normal">Visits</span></h3>
+                </div>
+                <span class="p-3 bg-primary/10 rounded-xl text-primary">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                </span>
+            </div>
+            <div class="w-full bg-dark-bg rounded-full h-2 mt-4">
+                <!-- Assuming 30 days goal for visual bar -->
+                <div class="bg-primary h-2 rounded-full" style="width: {% widthratio attendance_this_month 30 100 %}%"></div>
+            </div>
+            <p class="text-xs text-text-muted mt-2">Target: Daily consistency</p>
+        </div>
+
+        <!-- Weekly Stats -->
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <span class="text-text-muted text-sm font-medium uppercase tracking-wider">Last 7 Days</span>
+                    <h3 class="text-3xl font-bold text-white mt-1">{{ attendance_this_week }} <span class="text-lg text-text-secondary font-normal">Visits</span></h3>
+                </div>
+                <span class="p-3 bg-success/10 rounded-xl text-success">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                </span>
+            </div>
+            <div class="flex items-center gap-1 mt-4">
+                <!-- Simple visual for week days activity if complex data available, else static placeholder or simplified text -->
+                <p class="text-sm text-text-secondary">Great work! Keep maintaining your streak.</p>
+            </div>
+            <p class="text-xs text-text-muted mt-2">Consistency is key to progress.</p>
+        </div>
+    </div>
+
+    <!-- Attendance History Table -->
+    <div class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
+        <div class="p-6 border-b border-border">
+            <h3 class="font-bold text-white text-lg">Recent Activity</h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
+                    <tr>
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Check In</th>
+                        <th class="px-6 py-4">Check Out</th>
+                        <th class="px-6 py-4 text-right">Duration</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for record in attendance_records %}
+                    <tr class="hover:bg-dark-bg/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="text-white font-medium block">{{ record.check_in|date:"l" }}</span>
+                            <span class="text-text-muted text-xs">{{ record.check_in|date:"M d, Y" }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-2 text-text-secondary text-sm">
+                                <span class="w-2 h-2 rounded-full bg-success"></span>
+                                {{ record.check_in|date:"g:i A" }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if record.check_out %}
+                            <span class="inline-flex items-center gap-2 text-text-secondary text-sm">
+                                <span class="w-2 h-2 rounded-full bg-danger"></span>
+                                {{ record.check_out|date:"g:i A" }}
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-text-muted italic">Active</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right text-white font-medium">
+                            {% if record.duration %}
+                                {{ record.duration|floatformat:0 }} min
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-text-muted">
+                            <div class="flex flex-col items-center gap-2">
+                                <svg class="w-10 h-10 text-border" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <p>No attendance records found yet.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

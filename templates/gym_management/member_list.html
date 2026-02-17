@@ -1,0 +1,202 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}Members - MScube Gym{% endblock %}
+{% block header_title %}Member Management{% endblock %}
+
+{% block sidebar_menu %}
+<div class="space-y-6">
+    <div>
+        <p class="px-3 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Management</p>
+        <a href="{% url 'gym_management:admin_dashboard' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+            Dashboard
+        </a>
+        <a href="{% url 'gym_management:member_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary mt-1">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            Members
+        </a>
+        <a href="{% url 'gym_management:plan_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors mt-1">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            Plans
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors mt-1">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            Staff & Trainers
+        </a>
+    </div>
+
+    <div>
+        <p class="px-3 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Finance</p>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Transactions
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors mt-1">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Reports
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header & Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-xl font-semibold text-white">All Members</h2>
+            <p class="text-text-muted mt-1">View and manage gym members</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-card-bg border border-border rounded-xl p-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <!-- Search -->
+            <div class="md:col-span-5 relative">
+                <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" 
+                       name="search" 
+                       value="{{ request.GET.search }}" 
+                       placeholder="Search by name..." 
+                       class="w-full bg-dark-bg border border-border rounded-lg pl-10 pr-4 py-2 text-white focus:outline-none focus:border-primary transition-colors placeholder-text-muted/50">
+            </div>
+
+            <!-- Status Filter -->
+            <div class="md:col-span-3 relative">
+                <select name="status" class="w-full bg-dark-bg border border-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer">
+                    <option value="">All Status</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active Subscription</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired</option>
+                </select>
+                <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </div>
+
+            <!-- Buttons -->
+            <div class="md:col-span-4 flex gap-2">
+                <button type="submit" class="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-white border border-primary/20 hover:border-primary px-4 py-2 rounded-lg transition-all font-medium">
+                    Filter
+                </button>
+                <a href="{% url 'gym_management:member_list' %}" class="px-4 py-2 bg-dark-bg text-text-muted hover:text-white border border-border hover:border-white/20 rounded-lg transition-colors flex items-center justify-center">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Members Table -->
+    <div class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="bg-dark-bg/50 border-b border-border">
+                        <th class="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Member Info</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Contact</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Subscription</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for member in members %}
+                    <tr class="hover:bg-dark-bg/50 transition-colors group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold border border-primary/10">
+                                    {{ member.user.full_name|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="font-medium text-white group-hover:text-primary transition-colors">{{ member.user.full_name }}</div>
+                                    <div class="text-xs text-text-muted">@{{ member.user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-text-secondary">{{ member.user.email }}</div>
+                            <div class="text-xs text-text-muted mt-0.5">{{ member.user.phone_number|default:"-" }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% with member.get_active_subscription as sub %}
+                                {% if sub %}
+                                    <div class="text-sm font-medium text-white">{{ sub.plan.name }}</div>
+                                    <div class="text-xs text-text-muted mt-0.5">Exp: {{ sub.end_date|date:"M d, Y" }}</div>
+                                {% else %}
+                                    <span class="text-xs text-text-muted italic">No active plan</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% with member.get_active_subscription as sub %}
+                                {% if sub %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-text-muted/10 text-text-muted border border-border">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-text-muted"></span>
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'gym_management:member_detail' member.id %}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-dark-bg border border-border text-text-muted hover:text-white hover:border-primary hover:bg-primary/10 transition-all">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-text-muted">
+                            <div class="flex flex-col items-center gap-2">
+                                <svg class="w-10 h-10 text-border" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <p>No members found matching your search.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="bg-dark-bg/50 border-t border-border px-6 py-4 flex items-center justify-between">
+            <div class="hidden sm:block text-sm text-text-muted">
+                Showing <span class="font-medium text-white">{{ page_obj.start_index }}</span> to <span class="font-medium text-white">{{ page_obj.end_index }}</span> of <span class="font-medium text-white">{{ page_obj.paginator.count }}</span>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                       class="px-3 py-1.5 rounded-lg border border-border bg-card-bg text-text-muted hover:text-white hover:border-primary/50 transition-colors text-sm">
+                        Previous
+                    </a>
+                {% else %}
+                    <span class="px-3 py-1.5 rounded-lg border border-border bg-dark-bg text-text-muted/50 cursor-not-allowed text-sm">Previous</span>
+                {% endif %}
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+                       class="px-3 py-1.5 rounded-lg border border-border bg-card-bg text-text-muted hover:text-white hover:border-primary/50 transition-colors text-sm">
+                        Next
+                    </a>
+                {% else %}
+                    <span class="px-3 py-1.5 rounded-lg border border-border bg-dark-bg text-text-muted/50 cursor-not-allowed text-sm">Next</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

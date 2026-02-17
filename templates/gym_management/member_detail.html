@@ -1,0 +1,280 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}{{ member.user.full_name }} - MScube Gym{% endblock %}
+{% block header_title %}Member Profile{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-up">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+            <a href="{% url 'gym_management:member_list' %}" class="p-2 rounded-lg bg-card-bg border border-border text-text-muted hover:text-white hover:border-primary transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+            </a>
+            <div>
+                <h2 class="text-xl font-bold text-white">{{ member.user.full_name }}</h2>
+                <p class="text-text-muted mt-1 text-sm">Member since {{ member.created_at|date:"M Y" }}</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <!-- Check In Action -->
+            <form method="POST" action="{% url 'gym_management:attendance_checkin' %}">
+                {% csrf_token %}
+                <input type="hidden" name="member_id" value="{{ member.id }}">
+                <button type="submit" class="px-4 py-2 bg-success/10 text-success hover:bg-success hover:text-white border border-success/20 hover:border-success rounded-lg transition-colors flex items-center gap-2 font-medium">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                    Check In
+                </button>
+            </form>
+            
+            <button class="px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white border border-primary/20 hover:border-primary rounded-lg transition-colors flex items-center gap-2 font-medium">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                Edit Profile
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Sidebar: Profile Card -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-card-bg border border-border rounded-xl p-6 text-center">
+                <div class="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center text-primary text-3xl font-bold mx-auto mb-4 border-2 border-primary/10">
+                    {{ member.user.full_name|first|upper }}
+                </div>
+                <h2 class="text-xl font-bold text-white">{{ member.user.full_name }}</h2>
+                <p class="text-text-muted text-sm">@{{ member.user.username }}</p>
+                
+                <div class="mt-6 flex justify-center gap-2">
+                    {% if current_subscription %}
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">Active Member</span>
+                    {% else %}
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-danger/10 text-danger border border-danger/20">Inactive</span>
+                    {% endif %}
+                </div>
+
+                <div class="mt-8 text-left space-y-4">
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="p-2 rounded-lg bg-dark-bg text-text-secondary">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        </div>
+                        <span class="text-text-muted truncate">{{ member.user.email }}</span>
+                    </div>
+                    {% if member.user.phone_number %}
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="p-2 rounded-lg bg-dark-bg text-text-secondary">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                        </div>
+                        <span class="text-text-muted">{{ member.user.phone_number }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-center gap-3 text-sm">
+                        <div class="p-2 rounded-lg bg-dark-bg text-text-secondary">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                        <span class="text-text-muted">DoB: {{ member.date_of_birth|date:"M d, Y"|default:"-" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-card-bg border border-border rounded-xl p-6">
+                <h3 class="font-bold text-white mb-4">Statistics</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-3 bg-dark-bg rounded-lg border border-border text-center">
+                        <div class="text-2xl font-bold text-white">{{ attendance_records.count }}</div>
+                        <div class="text-xs text-text-muted uppercase mt-1">Visits</div>
+                    </div>
+                    <div class="p-3 bg-dark-bg rounded-lg border border-border text-center">
+                        <div class="text-2xl font-bold text-white">{{ subscriptions.count }}</div>
+                        <div class="text-xs text-text-muted uppercase mt-1">Subs</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Content -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Active Subscription -->
+            <div class="bg-card-bg border border-border rounded-xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-white text-lg">Current Subscription</h3>
+                    {% if current_subscription %}
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">Active</span>
+                    {% else %}
+                        <button class="px-3 py-1.5 bg-primary hover:bg-accent text-white rounded-lg text-xs font-medium transition-colors">
+                            Add Subscription
+                        </button>
+                    {% endif %}
+                </div>
+
+                {% if current_subscription %}
+                    <div class="bg-linear-to-br from-primary/20 to-primary/5 rounded-xl p-6 border border-primary/20">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="text-2xl font-bold text-white mb-1">{{ current_subscription.plan.name }}</h4>
+                                <p class="text-text-secondary text-sm">{{ current_subscription.plan.description|truncatechars:100 }}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-primary">{{ current_subscription.days_remaining }}</div>
+                                <div class="text-xs text-text-muted uppercase">Days Left</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10">
+                            <div>
+                                <p class="text-xs text-text-muted uppercase">Start Date</p>
+                                <p class="text-white font-medium mt-1">{{ current_subscription.start_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-text-muted uppercase">End Date</p>
+                                <p class="text-white font-medium mt-1">{{ current_subscription.end_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-text-muted uppercase">Status</p>
+                                <p class="text-success font-medium mt-1">Active</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-text-muted uppercase">Amount</p>
+                                <p class="text-white font-medium mt-1">Rs. {{ current_subscription.plan.price }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 rounded-xl bg-dark-bg border border-border border-dashed">
+                        <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-card-bg mb-3 text-text-muted">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        </div>
+                        <p class="text-text-muted">No active subscription found for this member.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Tabs / Sections for History -->
+            <div x-data="{ activeTab: 'attendance' }">
+                <div class="flex border-b border-border mb-6">
+                    <button @click="activeTab = 'attendance'" 
+                            :class="activeTab === 'attendance' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-white'"
+                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors">
+                        Attendance History
+                    </button>
+                    <button @click="activeTab = 'payments'" 
+                            :class="activeTab === 'payments' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-white'"
+                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors">
+                        Payment History
+                    </button>
+                    <button @click="activeTab = 'subscriptions'" 
+                            :class="activeTab === 'subscriptions' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-white'"
+                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors">
+                        Past Subscriptions
+                    </button>
+                </div>
+
+                <!-- Attendance Tab -->
+                <div x-show="activeTab === 'attendance'" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3">Check In</th>
+                                <th class="px-6 py-3">Check Out</th>
+                                <th class="px-6 py-3">Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            {% for record in attendance_records %}
+                            <tr class="hover:bg-dark-bg/50 transition-colors">
+                                <td class="px-6 py-4 text-text-secondary text-sm">{{ record.check_in|date:"M d, Y" }}</td>
+                                <td class="px-6 py-4 text-white text-sm">{{ record.check_in|date:"g:i A" }}</td>
+                                <td class="px-6 py-4 text-text-muted text-sm">{{ record.check_out|date:"g:i A"|default:"-" }}</td>
+                                <td class="px-6 py-4 text-text-muted text-sm">
+                                    {% if record.duration %}
+                                        {{ record.duration|floatformat:0 }}m
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="px-6 py-8 text-center text-text-muted">No attendance records found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if attendance_records|length >= 20 %}
+                        <div class="px-6 py-3 bg-dark-bg border-t border-border text-center">
+                            <a href="{% url 'gym_management:attendance_list' %}?search={{ member.user.username }}" class="text-sm text-primary hover:underline">View Full History</a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Payments Tab -->
+                <div x-show="activeTab === 'payments'" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm" x-cloak>
+                    <table class="w-full text-left">
+                        <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3">Plan</th>
+                                <th class="px-6 py-3">Amount</th>
+                                <th class="px-6 py-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            {% for payment in payments %}
+                            <tr class="hover:bg-dark-bg/50 transition-colors">
+                                <td class="px-6 py-4 text-text-secondary text-sm">{{ payment.initiated_at|date:"M d, Y" }}</td>
+                                <td class="px-6 py-4 text-white text-sm">{{ payment.subscription.plan.name }}</td>
+                                <td class="px-6 py-4 text-white text-sm font-medium">Rs. {{ payment.amount }}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium 
+                                        {% if payment.status == 'completed' %}bg-success/10 text-success border border-success/20
+                                        {% elif payment.status == 'pending' %}bg-warning/10 text-warning border border-warning/20
+                                        {% else %}bg-danger/10 text-danger border border-danger/20{% endif %}">
+                                        {{ payment.status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="px-6 py-8 text-center text-text-muted">No payment history found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Subscriptions Tab -->
+                <div x-show="activeTab === 'subscriptions'" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm" x-cloak>
+                    <table class="w-full text-left">
+                        <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
+                            <tr>
+                                <th class="px-6 py-3">Plan</th>
+                                <th class="px-6 py-3">Start Date</th>
+                                <th class="px-6 py-3">End Date</th>
+                                <th class="px-6 py-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            {% for sub in subscriptions %}
+                            <tr class="hover:bg-dark-bg/50 transition-colors">
+                                <td class="px-6 py-4 text-white text-sm font-medium">{{ sub.plan.name }}</td>
+                                <td class="px-6 py-4 text-text-secondary text-sm">{{ sub.start_date|date:"M d, Y" }}</td>
+                                <td class="px-6 py-4 text-text-secondary text-sm">{{ sub.end_date|date:"M d, Y" }}</td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium 
+                                        {% if sub.status == 'active' %}bg-success/10 text-success border border-success/20
+                                        {% elif sub.status == 'expired' %}bg-text-muted/10 text-text-muted border border-border
+                                        {% else %}bg-danger/10 text-danger border border-danger/20{% endif %}">
+                                        {{ sub.status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="px-6 py-8 text-center text-text-muted">No subscription history found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

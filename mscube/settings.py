@@ -13,8 +13,25 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 import os
+from django.core.exceptions import ImproperlyConfigured
 
 load_dotenv()
+
+
+def getenv_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+
+    normalized = value.strip().lower()
+    if normalized in {'1', 'true', 'yes', 'on'}:
+        return True
+    if normalized in {'0', 'false', 'no', 'off'}:
+        return False
+
+    raise ImproperlyConfigured(
+        f"Invalid boolean value for {name}: {value}. Use one of true/false, 1/0, yes/no, on/off."
+    )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +48,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.User'
 
 # Application definition
 
@@ -41,6 +60,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # Required for allauth
+    
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
+    'axes',  # Login attempt tracking
+    # 'django_ratelimit',  # Rate limiting (TODO: Configure Redis for production)
+    
+    # Local apps
     'gym_website.apps.GymWebsiteConfig',
     'accounts.apps.AccountsConfig',
     'gym_management.apps.GymManagementConfig',
@@ -54,6 +85,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Required for allauth
+    'axes.middleware.AxesMiddleware',  # Must be last
 ]
 
 ROOT_URLCONF = 'mscube.urls'
@@ -80,13 +113,26 @@ WSGI_APPLICATION = 'mscube.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# PostgreSQL configuration (production)
+if os.getenv('USE_POSTGRES', 'False') == 'True':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'mscube_db'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
     }
-}
-
+else:
+    # SQLite (development)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    } 
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -135,3 +181,95 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ==================== CACHE SETTINGS ====================
+
+# Cache configuration (in-memory for development, use Redis in production)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',  # No caching in dev
+    }
+}
+
+# ==================== AUTHENTICATION SETTINGS ====================
+
+# Site ID for django.contrib.sites
+SITE_ID = 1
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    # Django default (username/password)
+    'django.contrib.auth.backends.ModelBackend',
+    # Allauth (email/social)
+    'allauth.account.auth_backends.AuthenticationBackend',
+    # Axes (for tracking failed logins)
+    'axes.backends.AxesStandaloneBackend',
+]
+
+# Django Allauth Settings (Updated for django-allauth >= 0.63)
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}  # Allow login with username or email
+
+ACCOUNT_EMAIL_VERIFICATION_MODE = os.getenv('ACCOUNT_EMAIL_VERIFICATION_MODE', 'mandatory').strip().lower()
+ALLOWED_EMAIL_VERIFICATION_MODES = {'mandatory', 'optional', 'none'}
+if ACCOUNT_EMAIL_VERIFICATION_MODE not in ALLOWED_EMAIL_VERIFICATION_MODES:
+    raise ImproperlyConfigured(
+        'Invalid ACCOUNT_EMAIL_VERIFICATION_MODE. Allowed values: mandatory, optional, none.'
+    )
+
+account_email_required = getenv_bool('ACCOUNT_EMAIL_REQUIRED', True)
+ACCOUNT_EMAIL_VERIFICATION = ACCOUNT_EMAIL_VERIFICATION_MODE
+
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*', 'password2*']
+if account_email_required:
+    ACCOUNT_SIGNUP_FIELDS.insert(0, 'email*')
+else:
+    ACCOUNT_SIGNUP_FIELDS.insert(0, 'email')
+
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_RATE_LIMITS = {
+    'login_failed': '5/5m',  # 5 failed logins per 5 minutes
+}
+
+# Social Account Settings
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'optional'
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+# Login/Logout URLs
+LOGIN_REDIRECT_URL = '/management/my-dashboard/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = '/accounts/login/'
+
+# Email Backend
+USE_SMTP_EMAIL = os.getenv('USE_SMTP_EMAIL', 'False') == 'True'
+
+if USE_SMTP_EMAIL or not DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@mscubefitness.com')
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Django Axes Settings (Brute Force Protection)
+AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts
+AXES_COOLOFF_TIME = 1  # Lock for 1 hour
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # Lock by both username and IP
+AXES_RESET_ON_SUCCESS = True
+
+# Security Settings (Production)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+

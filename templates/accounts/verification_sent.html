@@ -1,0 +1,21 @@
+{% extends "layouts/auth_base.html" %}
+
+{% block title %}Verify Email - MScube Gym{% endblock %}
+{% block heading %}Verify Your Email{% endblock %}
+{% block subheading %}A verification link has been sent to your inbox{% endblock %}
+
+{% block content %}
+<div class="space-y-5 w-full text-center">
+    <div class="mx-auto h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center text-primary">
+        <i class="fa-solid fa-envelope-circle-check text-sm" aria-hidden="true"></i>
+    </div>
+
+    <p class="text-sm text-text-secondary leading-relaxed">
+        Please check your email and click the verification link to activate your account.
+    </p>
+
+    <a href="{% url 'account_login' %}" class="block w-full text-white bg-primary hover:bg-accent focus:ring-4 focus:outline-none focus:ring-primary/30 font-semibold rounded-lg text-sm px-5 py-2.5 text-center transition-colors">
+        Back to Sign In
+    </a>
+</div>
+{% endblock %}

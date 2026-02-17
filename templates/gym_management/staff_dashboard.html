@@ -1,0 +1,137 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}Staff Dashboard - MScube Gym{% endblock %}
+{% block header_title %}Staff Operations{% endblock %}
+
+{% block sidebar_menu %}
+<div class="mb-4">
+    <p class="px-3 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Main</p>
+    <a href="{% url 'gym_management:staff_dashboard' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+        Dashboard
+    </a>
+    <a href="{% url 'gym_management:member_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors mt-1">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+        Members
+    </a>
+    <a href="{% url 'gym_management:attendance_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-text-secondary rounded-lg hover:bg-white/5 hover:text-white transition-colors mt-1">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Attendance
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-up">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-text-muted text-sm font-medium">Total Members</span>
+                <span class="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                </span>
+            </div>
+            <div class="text-3xl font-bold text-white">{{ total_members }}</div>
+        </div>
+
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-text-muted text-sm font-medium">Daily Check-ins</span>
+                 <span class="p-2 bg-success/10 rounded-lg text-success">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </span>
+            </div>
+            <div class="text-3xl font-bold text-white">{{ today_checkins }}</div>
+        </div>
+
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-text-muted text-sm font-medium">Currently Present</span>
+                 <span class="p-2 bg-warning/10 rounded-lg text-warning">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </span>
+            </div>
+            <div class="text-3xl font-bold text-white">{{ currently_present }}</div>
+        </div>
+    </div>
+
+    <!-- Active Members Table -->
+    <div class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
+        <div class="flex items-center justify-between p-6 border-b border-border">
+            <h3 class="text-lg font-bold text-white">Currently Checked In</h3>
+            <button class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-accent transition-colors">
+                Manual Check-in
+            </button>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-dark-bg text-text-secondary uppercase text-xs font-semibold">
+                    <tr>
+                        <th class="px-6 py-4">Member</th>
+                        <th class="px-6 py-4">Check-in Time</th>
+                        <th class="px-6 py-4">Duration</th>
+                        <th class="px-6 py-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% if currently_present_list %}
+                        {% for record in currently_present_list %}
+                        <tr class="hover:bg-white/5 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
+                                        {{ record.member.user.full_name|first }}
+                                    </div>
+                                    <span class="font-medium text-white">{{ record.member.user.full_name }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-text-secondary">{{ record.check_in|date:"g:i A" }}</td>
+                            <td class="px-6 py-4 text-text-secondary">{{ record.duration|default:"Processing..." }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-xs font-medium text-danger hover:underline">Check Out</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-text-muted">
+                                No members currently checked in.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Links Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="#" class="p-4 rounded-xl bg-card-bg border border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center text-center gap-3 group">
+            <div class="w-12 h-12 rounded-full bg-dark-bg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            </div>
+            <span class="font-medium text-text-secondary group-hover:text-white">View Members</span>
+        </a>
+        <a href="#" class="p-4 rounded-xl bg-card-bg border border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center text-center gap-3 group">
+            <div class="w-12 h-12 rounded-full bg-dark-bg flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            </div>
+            <span class="font-medium text-text-secondary group-hover:text-white">Attendance</span>
+        </a>
+        <a href="#" class="p-4 rounded-xl bg-card-bg border border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center text-center gap-3 group">
+            <div class="w-12 h-12 rounded-full bg-dark-bg flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+            </div>
+            <span class="font-medium text-text-secondary group-hover:text-white">Subscriptions</span>
+        </a>
+         <a href="#" class="p-4 rounded-xl bg-card-bg border border-border hover:border-primary/50 transition-colors flex flex-col items-center justify-center text-center gap-3 group">
+            <div class="w-12 h-12 rounded-full bg-dark-bg flex items-center justify-center group-hover:scale-110 transition-transform">
+                 <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            </div>
+            <span class="font-medium text-text-secondary group-hover:text-white">Plans</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

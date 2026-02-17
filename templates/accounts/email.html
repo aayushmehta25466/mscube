@@ -1,0 +1,31 @@
+{% extends "layouts/auth_base.html" %}
+
+{% block title %}Email Settings - MScube Gym{% endblock %}
+{% block heading %}Email Settings{% endblock %}
+{% block subheading %}Manage your account email addresses{% endblock %}
+
+{% block content %}
+<div class="space-y-5 w-full">
+    {% if emailaddresses %}
+    <div class="space-y-2">
+        {% for emailaddress in emailaddresses %}
+        <label class="flex items-center gap-3 p-3 rounded-lg border border-border bg-dark-bg/50 text-sm text-text-secondary">
+            <input type="radio" name="email" value="{{ emailaddress.email }}" {% if emailaddress.primary %}checked{% endif %} class="h-4 w-4 border-border bg-dark-bg text-primary focus:ring-primary/40">
+            <span class="flex-1">{{ emailaddress.email }}</span>
+            {% if emailaddress.verified %}
+            <span class="text-success text-xs">Verified</span>
+            {% else %}
+            <span class="text-warning text-xs">Unverified</span>
+            {% endif %}
+        </label>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-text-secondary text-center">No email address configured.</p>
+    {% endif %}
+
+    <a href="{% url 'account_login' %}" class="block w-full text-white bg-primary hover:bg-accent rounded-lg text-sm px-5 py-2.5 text-center transition-colors font-semibold">
+        Back to Sign In
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "layouts/auth_base.html" %}
+{% load allauth account %}
+
+{% block title %}Sign Up - MScube Gym{% endblock %}
+{% block heading %}Create Account{% endblock %}
+{% block subheading %}Join MScube and start your fitness journey{% endblock %}
+
+{% block content %}
+<form class="space-y-5 w-full" method="POST" action="{% url 'account_signup' %}">
+    {% csrf_token %}
+
+    {% if redirect_field_value %}
+    <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+    {% endif %}
+
+    {% if form.non_field_errors %}
+    <div class="bg-danger/10 border border-danger/30 text-danger text-sm p-3 rounded-lg">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div>
+        <label for="id_email" class="block text-sm font-medium text-text-secondary mb-2">Email</label>
+        <input id="id_email" name="email" type="email" value="{{ form.email.value|default:'' }}" autocomplete="email" required class="block w-full min-w-0 bg-dark-bg/60 border border-border text-white text-sm rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none px-3 py-2.5 transition-colors" placeholder="you@example.com">
+        {% if form.email.errors %}<p class="mt-1 text-xs text-danger">{{ form.email.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+        <label for="id_username" class="block text-sm font-medium text-text-secondary mb-2">Username</label>
+        <input id="id_username" name="username" type="text" value="{{ form.username.value|default:'' }}" autocomplete="username" required class="block w-full min-w-0 bg-dark-bg/60 border border-border text-white text-sm rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none px-3 py-2.5 transition-colors" placeholder="Choose a username">
+        {% if form.username.errors %}<p class="mt-1 text-xs text-danger">{{ form.username.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+        <label for="id_password1" class="block text-sm font-medium text-text-secondary mb-2">Password</label>
+        <input id="id_password1" name="password1" type="password" autocomplete="new-password" required class="block w-full min-w-0 bg-dark-bg/60 border border-border text-white text-sm rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none px-3 py-2.5 transition-colors" placeholder="Create a password">
+        {% if form.password1.errors %}<p class="mt-1 text-xs text-danger">{{ form.password1.errors.0 }}</p>{% endif %}
+    </div>
+
+    <div>
+        <label for="id_password2" class="block text-sm font-medium text-text-secondary mb-2">Confirm Password</label>
+        <input id="id_password2" name="password2" type="password" autocomplete="new-password" required class="block w-full min-w-0 bg-dark-bg/60 border border-border text-white text-sm rounded-lg focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none px-3 py-2.5 transition-colors" placeholder="Repeat your password">
+        {% if form.password2.errors %}<p class="mt-1 text-xs text-danger">{{ form.password2.errors.0 }}</p>{% endif %}
+    </div>
+
+    <p class="text-xs text-text-muted text-center">By signing up, you agree to our Terms and Conditions.</p>
+
+    <button type="submit" class="w-full text-white bg-primary hover:bg-accent focus:ring-4 focus:outline-none focus:ring-primary/30 font-semibold rounded-lg text-sm px-5 py-2.5 text-center transition-colors">
+        Create Account
+    </button>
+
+    <p class="text-sm text-text-secondary text-center pt-1">
+        Already have an account? <a href="{% url 'account_login' %}" class="font-medium text-primary hover:text-accent transition-colors">Sign in</a>
+    </p>
+</form>
+{% endblock %}

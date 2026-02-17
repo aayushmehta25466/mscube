@@ -42,12 +42,17 @@
                         <li><a href="{% url 'notifications' %}"
                             class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'notifications' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Notifications</a>
                         </li>
-
+                        <li><a href="{% url 'contact' %}"
+                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'contact' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Contact Us</a>
+                        </li>
                 </ul>
 
-                <a href="{% url 'contact' %}"
-                    class="hidden md:inline-block bg-primary text-white px-7 py-3 rounded-lg font-semibold transition-all hover:bg-accent hover:-translate-y-0.5 shadow-md hover:shadow-lg">Contact
-                    Us</a>
+                <div class="hidden md:flex items-center gap-3">
+                    <a href="{% url 'account_login' %}"
+                        class="px-5 py-2 rounded-lg font-semibold text-text-primary border border-border hover:border-primary hover:text-white transition-colors">Login</a>
+                    <a href="{% url 'account_signup' %}"
+                        class="px-5 py-2 rounded-lg font-semibold bg-primary text-white transition-all hover:bg-accent hover:-translate-y-0.5 shadow-md hover:shadow-lg">Signup</a>
+                </div>
 
                 <div class="flex flex-col gap-1.5 cursor-pointer md:hidden" id="hamburger">
                     <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>

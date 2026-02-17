@@ -1,0 +1,18 @@
+{% extends "layouts/auth_base.html" %}
+
+{% block title %}Sign Out - MScube Gym{% endblock %}
+{% block heading %}Sign Out{% endblock %}
+{% block subheading %}You are about to sign out of your account{% endblock %}
+
+{% block content %}
+<form method="post" action="{% url 'account_logout' %}" class="space-y-4 w-full text-center">
+    {% csrf_token %}
+    <p class="text-sm text-text-secondary">Do you want to continue?</p>
+    <button type="submit" class="w-full text-white bg-danger hover:bg-danger/80 focus:ring-4 focus:outline-none focus:ring-danger/30 font-semibold rounded-lg text-sm px-5 py-2.5 text-center transition-colors">
+        Sign Out
+    </button>
+    <a href="/" class="block w-full text-text-secondary hover:text-white border border-border rounded-lg text-sm px-5 py-2.5 text-center transition-colors hover:bg-white/5">
+        Cancel
+    </a>
+</form>
+{% endblock %}

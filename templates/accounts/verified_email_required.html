@@ -1,0 +1,21 @@
+{% extends "layouts/auth_base.html" %}
+
+{% block title %}Email Verification Required - MScube Gym{% endblock %}
+{% block heading %}Verification Required{% endblock %}
+{% block subheading %}Please verify your email before continuing{% endblock %}
+
+{% block content %}
+<div class="space-y-5 w-full text-center">
+    <div class="mx-auto h-10 w-10 rounded-full bg-warning/15 flex items-center justify-center text-warning">
+        <i class="fa-solid fa-triangle-exclamation text-sm" aria-hidden="true"></i>
+    </div>
+
+    <p class="text-sm text-text-secondary">
+        Your account requires a verified email address to proceed.
+    </p>
+
+    <a href="{% url 'account_login' %}" class="block w-full text-white bg-primary hover:bg-accent focus:ring-4 focus:outline-none focus:ring-primary/30 font-semibold rounded-lg text-sm px-5 py-2.5 text-center transition-colors">
+        Back to Sign In
+    </a>
+</div>
+{% endblock %}

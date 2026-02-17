@@ -1,0 +1,56 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="bg-dark-bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MScube Gym{% endblock %}</title>
+    <link href="{% static 'css/output.css' %}" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 bg-linear-to-br from-dark-bg to-section-bg text-text-primary">
+    
+    <div class="w-full max-w-md animate-fade-in-up my-auto px-4 py-8">
+        <!-- Logo / Header -->
+        <div class="text-center mb-8">
+            <a href="/" class="inline-block transition-transform hover:scale-105">
+                <!-- Fallback to text if image not available, user can replace src -->
+                <img src="{% static 'images/logo.png' %}" alt="MScube" class="h-8 w-20 mx-auto mb-4 object-contain brightness-90">
+            </a>
+            <h2 class="text-3xl font-bold tracking-tight text-white">{% block heading %}Welcome Back{% endblock %}</h2>
+            <p class="mt-2 text-sm text-text-secondary">{% block subheading %}Sign in to your account{% endblock %}</p>
+        </div>
+
+        <!-- Card -->
+        <div class="bg-card-bg/50 backdrop-blur-sm border border-border rounded-2xl shadow-xl overflow-hidden p-8">
+            {% if messages %}
+            <div class="mb-4 space-y-2">
+                {% for message in messages %}
+                <div class="p-3 rounded-lg text-sm {% if message.tags == 'error' %}bg-danger/20 text-danger border border-danger/20{% else %}bg-success/20 text-success border border-success/20{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- Back to Home -->
+        <div class="mt-8 text-center">
+            <a href="/" class="inline-flex items-center text-sm font-medium text-text-muted hover:text-primary transition-colors hover:bg-white/5 px-4 py-2 rounded-full border border-transparent hover:border-white/10">
+                <i class="fa-solid fa-arrow-left mr-2 text-xs" aria-hidden="true"></i>
+                Back to Home
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

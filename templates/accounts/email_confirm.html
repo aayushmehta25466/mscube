@@ -1,0 +1,35 @@
+{% extends "layouts/auth_base.html" %}
+
+{% block title %}Confirm Email - MScube Gym{% endblock %}
+{% block heading %}Confirm Email Address{% endblock %}
+{% block subheading %}Complete verification to continue{% endblock %}
+
+{% block content %}
+{% if confirmation %}
+<form method="post" action="." class="space-y-5 w-full text-center">
+    {% csrf_token %}
+
+    <div class="mx-auto h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center text-primary">
+        <i class="fa-solid fa-envelope-open-text text-sm" aria-hidden="true"></i>
+    </div>
+
+    <p class="text-sm text-text-secondary leading-relaxed">
+        Confirm email for <span class="text-white font-medium">{{ confirmation.email_address.email }}</span>
+    </p>
+
+    <button type="submit" class="w-full text-white bg-primary hover:bg-accent focus:ring-4 focus:outline-none focus:ring-primary/30 font-semibold rounded-lg text-sm px-5 py-2.5 text-center transition-colors">
+        Confirm Email
+    </button>
+</form>
+{% else %}
+<div class="space-y-4 w-full text-center">
+    <div class="mx-auto h-10 w-10 rounded-full bg-danger/15 flex items-center justify-center text-danger">
+        <i class="fa-solid fa-circle-xmark text-sm" aria-hidden="true"></i>
+    </div>
+    <p class="text-sm text-text-secondary">This confirmation link is invalid or already used.</p>
+    <a href="{% url 'account_login' %}" class="block w-full text-white bg-primary hover:bg-accent focus:ring-4 focus:outline-none focus:ring-primary/30 font-semibold rounded-lg text-sm px-5 py-2.5 text-center transition-colors">
+        Go to Sign In
+    </a>
+</div>
+{% endif %}
+{% endblock %}
