@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
-from datetime import date
+from django.utils import timezone
 
 class UserManager(BaseUserManager):
     """Custom user manager for User model without username field."""
@@ -100,7 +100,7 @@ class BaseProfile(models.Model):
     def age(self):
         """Calculate age from date_of_birth."""
         if self.date_of_birth:
-            today = date.today()
+            today = timezone.localdate()
             return today.year - self.date_of_birth.year - (
                 (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
             )

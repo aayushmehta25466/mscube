@@ -17,3 +17,4 @@ pillow>=10.0.0
 requests>=2.31.0  # HTTP library (required by allauth)
 django-ratelimit>=4.1.0  # Rate limiting for security
 django-axes>=6.1.0  # Login attempt tracking
+redis>=4.5.0  # Persistent cache for rate limiting

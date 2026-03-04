@@ -1,0 +1,146 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}{{ title }} - MScube Gym Management{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">{{ title }}</h1>
+            <p class="text-text-secondary">Fill in the member details below</p>
+        </div>
+        <a href="{% url 'gym_management:member_list' %}" 
+           class="px-4 py-2 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Members
+        </a>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+                <p class="text-red-400">{{ form.non_field_errors }}</p>
+            </div>
+            {% endif %}
+
+            <!-- User Account Information -->
+            <div class="border-b border-border pb-6">
+                <h2 class="text-xl font-semibold text-white mb-4">Account Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Full Name <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.full_name }}
+                        {% if form.full_name.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.full_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Email Address <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.email.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.username %}
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Username
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.username.errors.0 }}</p>
+                        {% endif %}
+                        <p class="text-xs text-text-secondary mt-1">Optional - will be auto-generated if empty</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Phone Number
+                        </label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.phone.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    {% if form.password %}
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Password <span class="text-red-500">*</span>
+                        </label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.password.errors.0 }}</p>
+                        {% endif %}
+                        <p class="text-xs text-text-secondary mt-1">Minimum 8 characters</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Personal Information -->
+            <div class="border-b border-border pb-6">
+                <h2 class="text-xl font-semibold text-white mb-4">Personal Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Date of Birth
+                        </label>
+                        {{ form.date_of_birth }}
+                        {% if form.date_of_birth.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.date_of_birth.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Emergency Contact
+                        </label>
+                        {{ form.emergency_contact }}
+                        {% if form.emergency_contact.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.emergency_contact.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-text-secondary mb-2">
+                            Address
+                        </label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                        <p class="text-red-400 text-sm mt-1">{{ form.address.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-4 pt-4">
+                <a href="{% url 'gym_management:member_list' %}" 
+                   class="px-6 py-3 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+                    <i class="fas fa-save mr-2"></i>{{ submit_text }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

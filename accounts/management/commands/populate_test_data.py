@@ -445,19 +445,19 @@ class Command(BaseCommand):
             # Create subscription
             # Mix of active, pending, and expired subscriptions
             if i == 0:  # First member: active subscription
-                start_date = date.today() - timedelta(days=15)
+                start_date = timezone.localdate() - timedelta(days=15)
                 end_date = start_date + timedelta(days=plan.duration_days)
                 status = 'active'
             elif i == 1:  # Second member: pending subscription
-                start_date = date.today()
+                start_date = timezone.localdate()
                 end_date = start_date + timedelta(days=plan.duration_days)
                 status = 'pending'
             elif i == 2:  # Third member: expired subscription
-                start_date = date.today() - timedelta(days=plan.duration_days + 30)
+                start_date = timezone.localdate() - timedelta(days=plan.duration_days + 30)
                 end_date = start_date + timedelta(days=plan.duration_days)
                 status = 'expired'
             else:  # Rest: active subscriptions
-                start_date = date.today() - timedelta(days=random.randint(5, 20))
+                start_date = timezone.localdate() - timedelta(days=random.randint(5, 20))
                 end_date = start_date + timedelta(days=plan.duration_days)
                 status = 'active'
             
@@ -507,7 +507,7 @@ class Command(BaseCommand):
             for days_ago in range(14, 0, -1):
                 # Random attendance (70% chance of attending)
                 if random.random() < 0.7:
-                    check_in_date = date.today() - timedelta(days=days_ago)
+                    check_in_date = timezone.localdate() - timedelta(days=days_ago)
                     check_in_time = timezone.now() - timedelta(
                         days=days_ago,
                         hours=random.randint(6, 20),
@@ -544,7 +544,7 @@ class Command(BaseCommand):
         
         content = f"""# MScube Gym Management - Test User Credentials
 
-**Generated on:** {date.today().strftime('%B %d, %Y')}
+    **Generated on:** {timezone.localdate().strftime('%B %d, %Y')}
 
 ## Quick Access
 

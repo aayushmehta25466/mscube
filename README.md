@@ -7,7 +7,6 @@ A comprehensive gym management system built with Django 5.x, featuring custom au
 ### Authentication & User Management
 - ✅ **Custom User Model** with email and username login
 - ✅ **Email Verification** (configurable: mandatory/optional/none via environment)
-- ✅ **OAuth Integration** (Google & Facebook via django-allauth)
 - ✅ **Role-Based Access Control** (Member, Trainer, Staff, Admin)
 - ✅ **Brute Force Protection** (django-axes)
 - ✅ **Profile Auto-Creation** via signals
@@ -280,23 +279,6 @@ EMAIL_HOST_PASSWORD=your-app-password
 ```
 
 For Gmail, use [App Passwords](https://support.google.com/accounts/answer/185833)
-
-## OAuth Setup
-
-### Google OAuth
-1. Create project at [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable Google+ API
-3. Create OAuth 2.0 credentials
-4. Add to Django admin: **Sites > Add** (domain: localhost:8000)
-5. Add to Django admin: **Social Applications > Add Google**
-   - Client ID: from Google Console
-   - Secret key: from Google Console
-   - Sites: Select your site
-
-### Facebook OAuth
-1. Create app at [Facebook Developers](https://developers.facebook.com/)
-2. Get App ID and App Secret
-3. Add to Django admin: **Social Applications > Add Facebook**
 
 ## Payment Integration (eSewa)
 

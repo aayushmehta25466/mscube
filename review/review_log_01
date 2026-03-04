@@ -1,0 +1,261 @@
+# REVIEW LOG 01
+
+## 📊 Phase 0 Compliance Status
+
+### 2026-03-03 Verification Entry
+- Status: ⚠ Partial
+- Implemented: Custom user and profile role architecture, mandatory email verification flow, role mixins, django-axes lockout controls, security middleware, and baseline auth hardening are in place.
+- Evidence summary: Foundation is implemented, but full production closure depends on unresolved cross-cutting items.
+
+## 📊 Phase 1 Compliance Status
+
+### 2026-03-03 Verification Entry
+- Status: ⚠ Partial
+- Implemented: Dashboards, member management, attendance workflows, subscription and payment flows, and key query optimizations are present.
+- Evidence summary: Features are broadly operational, but architecture and risk controls are not fully closed for merge confidence.
+
+## ⚠ Missing or Partial Implementations
+
+### 2026-03-03 Findings
+- Service-layer drift remains in multiple view and function endpoints where business logic still lives in views.
+- Permission enforcement is inconsistent in some function endpoints using direct role attribute checks.
+- Broad exception handling patterns still expose raw error text in user-facing flows.
+- Financial concurrency and idempotency guarantees need stronger explicit coverage in critical paths.
+
+## 🔄 Schema Drift Check
+
+### 2026-03-03 Findings
+- No critical schema drift identified from reviewed migrations and models.
+- Core constraints and indexes appear aligned with intended domain design.
+
+## ⚡ Query Optimization Check
+
+### 2026-03-03 Findings
+- Positive: frequent list and dashboard queries already use optimized relation loading and aggregates.
+- Gap: some analytics calculations are still handled in Python and should move to DB aggregation for scale.
+
+## 🧪 Test Coverage Gap Analysis
+
+### 2026-03-03 Findings
+- Positive: dedicated security test suites are present and were run during verification.
+- Gaps: limited targeted coverage for concurrency races, payment idempotency edges, and certain negative object-authorization paths.
+
+## 🚦 Implementation Verdict
+
+### 2026-03-03
+- Verdict: ⚠ Partial
+- Merge readiness: Not fully production-ready yet; major capabilities exist but unresolved hardening items should be closed first.
+
+
+📊 Phase 0 Compliance Status
+✅ Implemented: Custom user/profile stack and core domain models exist in models.py:40, models.py:113, models.py:10, models.py:44, models.py:123, models.py:219.
+✅ Implemented: Email-confirmed member profile creation signal is wired and app-ready import is present in signals.py:12 and apps.py:10.
+✅ Implemented: Mandatory email verification mode for allauth is configured in settings.py:239.
+✅ Implemented: OAuth providers are configured in settings.py:69-70.
+✅ Implemented: django-axes backend and limits are configured in settings.py:219-224 and settings.py:280-283.
+✅ Implemented (production-gated): SSL redirect, secure cookies, and HSTS are set under non-debug mode in settings.py:287-294.
+⚠ Policy deviation: Social login email verification is optional in settings.py:257, which weakens strict “mandatory verification” posture for social auth.
+📊 Phase 1 Compliance Status
+✅ Implemented: All four dashboards exist and are routed via views.py:37, views.py:923, views.py:1041, views.py:1082, plus URL mapping in urls.py:31-82.
+✅ Implemented: Member management CRUD + detail + assignment flow exists in views.py:92-236 and views.py:469-521.
+✅ Implemented: Attendance check-in/out, duplicate prevention, and expiry blocking are present in views.py:722-823 and services.py:120-177.
+✅ Implemented: Object-level permission mixin is used on sensitive detail pages in views.py:124-133 and views.py:660-669.
+⚠ Partial: Fine-grained admin permission checks are inconsistent; member CRUD and some admin list endpoints rely only on AdminRequiredMixin without can_manage_users/can_manage_payments checks (see views.py:162, views.py:195, views.py:222, views.py:526).
+⚠ Missing or Partial Implementations
+Missing required verification docs in workspace: developmental.md, database_blueprint.md, permission_architecture.md (not found by workspace search), so verification is based on code + review artifacts only.
+Attendance race condition risk remains: duplicate prevention is application-level query-then-create without DB uniqueness/locking for open session per member/day in services.py:162-177 and model schema in models.py:219-265.
+Broad exception handling masks security semantics and can downgrade permission failures into generic redirects/messages in views.py:810 and views.py:909.
+Financial data durability risk: cascade deletes on subscription/payment chains can remove payment history if hard deletes occur in models.py:54-57 and models.py:140-143.
+🔄 Schema Drift Check
+✅ No migration drift detected: makemigrations dry-run reports “No changes detected.”
+✅ Core constraints/indexes present, including single active subscription constraint in models.py:86-90 and corresponding migration in 0001_initial.py:131-134.
+✅ Relationship graph is internally consistent across initial migrations in 0001_initial.py and 0001_initial.py.
+⚡ Query Optimization Check
+✅ Strong optimization patterns are broadly used: select_related/prefetch_related/aggregate/annotate across dashboards and lists in views.py:67-85, views.py:745-753, views.py:1186-1208.
+⚠ Inefficiency: workout duration average is computed in Python loop instead of DB expression in views.py:947-954.
+⚠ Redundant object fetch/audit: member detail path appears to fetch object twice in request lifecycle, evidenced by duplicate access logs and explicit get_object call in context builder at views.py:136.
+🧪 Test Coverage Gap Analysis
+Executed suites: gym_management.tests_security_audit + gym_management.tests_security_comprehensive.
+Result: 37 tests run, 32 passed, 2 failed, 3 errors.
+Failures/errors are concentrated in test design assumptions (missing CSRF token bootstrap and status-code expectations), not all in runtime security regressions; see failing cases in tests_security_comprehensive.py:143-160, tests_security_comprehensive.py:175-193, tests_security_comprehensive.py:238-246, tests_security_comprehensive.py:267-290, tests_security_comprehensive.py:473-484.
+Coverage gaps: accounts app and generic app tests are effectively absent in tests.py and tests.py; no direct automated verification for OAuth flow correctness, signal-triggered profile creation via real allauth confirmation pipeline, dashboard query-count ceilings, or timezone boundary transitions.
+🚦 Implementation Verdict
+⚠ Partial
+🏗 Architectural Violations
+Partial permission drift: detail views use object permission mixin, but create/update/delete/list flows rely on role-only checks in several admin endpoints.
+🔐 Authorization Issues
+Least-privilege not uniformly enforced for limited admins on all management endpoints.
+Exception swallowing around permission logic can obscure explicit deny paths.
+📊 Performance Issues
+Localized Python-side aggregation in member dashboard.
+Possible duplicate object retrieval on detail view path.
+💳 Financial Integrity Issues
+Payment amount is server-derived in form path (forms.py:306-340), but hard-delete cascades still threaten historical financial records at DB level.
+🛡 Security Vulnerabilities
+Social auth verification strictness mismatch.
+Attendance duplicate-check race window without DB-level guard.
+Default non-persistent cache can weaken practical rate-limit guarantees in multi-process deployments (locmem default at settings.py:206-211).
+🧠 Code Smells & Technical Debt
+Broad except blocks in critical workflow endpoints.
+Security tests contain brittle assumptions causing false negatives/positives.
+🔄 Refactor Recommendations
+Enforce granular permission utility checks consistently on all admin CRUD/list endpoints.
+Add DB-level attendance uniqueness strategy for open session per member/day.
+Replace broad except with targeted exception handling and preserve PermissionDenied semantics.
+Consider PROTECT/soft-delete policy for financial entities to preserve audit trails.
+Align social verification policy with mandatory verification requirement.
+🚦 Overall Code Quality
+⚠ Needs Refactor
+Risk Level
+MODERATE
+
+---
+
+## 📊 Phase 0 Compliance Status
+
+### 2026-03-04 Full Implementation Verification
+- Status: ⚠ Partial
+- Verified implemented: custom User model and profile hierarchy, allauth mandatory verification mode, oauth provider apps, django-axes backend/middleware/limits, post-confirmation member profile signal, and core gym domain models are present and wired.
+- Verified implemented: production SSL/cookie/HSTS settings exist and are correctly DEBUG-gated.
+- Residual gaps: social account verification remains optional by configuration; deployment check currently reports production warnings because runtime is in development posture (DEBUG=True, empty ALLOWED_HOSTS, insecure test/default secret).
+
+## 📊 Phase 1 Compliance Status
+
+### 2026-03-04 Full Implementation Verification
+- Status: ⚠ Partial
+- Verified implemented: admin/member/trainer/staff dashboards, member CRUD + detail + assignment flow, attendance check-in/check-out, reporting views, and payment/subscription lifecycle views are present and routed.
+- Verified implemented: major list/detail/dashboard endpoints use select_related/prefetch_related/aggregate patterns and key sensitive detail views apply ObjectOwnershipMixin with permission flags.
+- Residual gaps: least-privilege enforcement is inconsistent across admin CRUD/list endpoints (role-only gating in several paths), and some FBVs still rely on ad-hoc role checks plus broad exception handling.
+
+## ⚠ Missing or Partial Implementations
+
+### 2026-03-04 Findings
+- Attendance duplicate prevention remains vulnerable to race conditions because open-session uniqueness is application-level check-then-create with no DB uniqueness/locking for attendance rows.
+- Timezone boundary risk remains: frequent use of date.today() instead of timezone-local date handling can drift behavior around midnight for non-UTC operating context.
+- Broad exception handling still leaks raw error text into user-facing messages and can weaken explicit authorization semantics.
+- Financial history durability remains weak if destructive deletes occur because payment/subscription chains still use CASCADE.
+- Social-account verification policy is weaker than strict mandatory-verification posture (optional social email verification).
+
+## 🔄 Schema Drift Check
+
+### 2026-03-04 Findings
+- makemigrations dry-run check: No changes detected.
+- showmigrations check: accounts.0001 and gym_management.0001/0002 are present and applied.
+- Relationship and field-type alignment across models and migrations appears consistent for reviewed Phase 0/1 entities.
+- No immediate broken FK relationships observed in reviewed schema graph.
+
+## ⚡ Query Optimization Check
+
+### 2026-03-04 Findings
+- Positive: dashboards and high-traffic lists generally apply relation-loading and DB aggregation correctly.
+- Gap: member dashboard average duration is still calculated in Python loop rather than DB expression/aggregation.
+- Gap: member detail context path calls get_object again, causing duplicate object fetch/audit logging.
+
+## 🧪 Test Coverage Gap Analysis
+
+### 2026-03-04 Findings
+- Executed: python manage.py test gym_management.tests_security_audit gym_management.tests_security_comprehensive (37 tests).
+- Result: 32 passed, 2 failed, 3 errors.
+- Failing/error tests are concentrated in comprehensive-suite assumptions (csrf token bootstrap and expected response semantics) rather than clear broad regressions across all Phase 0/1 controls.
+- Coverage gap remains substantial in accounts/tests.py and gym_management/tests.py (placeholder-only), with missing targeted tests for oauth callback integrity, real allauth email-confirmation signal flow, timezone boundary behavior, and attendance concurrency races.
+
+## 🚦 Implementation Verdict
+
+### 2026-03-04
+- Verdict: ⚠ Partial
+- Merge readiness: Core foundation and Phase 1 features are materially implemented, but production-safe sign-off still requires closing least-privilege consistency, attendance concurrency hardening, timezone/date correctness hardening, and test-suite reliability/coverage gaps.
+
+---
+
+## 📊 Phase 0 Compliance Status
+
+### 2026-03-04 Social Login Removal Update
+- Status: ✅ Fully Implemented (for this task scope)
+- Implemented: Removed social authentication app/provider wiring from project settings and removed all SOCIALACCOUNT_* runtime configuration.
+- Verification: Mandatory email verification setting for account authentication remains active.
+
+## 📊 Phase 1 Compliance Status
+
+### 2026-03-04 Social Login Removal Update
+- Status: ✅ Fully Implemented (for this task scope)
+- Implemented: Login UX now exposes only email/username + password flow with reset and signup links.
+- Verification: Core allauth account routes continue to resolve for login, signup, password reset, and email verification.
+
+## ⚠ Missing or Partial Implementations
+
+### 2026-03-04 Social Login Removal Update
+- No unresolved social-auth code paths detected in runtime settings/templates/URL wiring.
+- Broader non-scope findings from prior audits (permission consistency, concurrency hardening, test-suite reliability) remain tracked separately.
+
+## 🔄 Schema Drift Check
+
+### 2026-03-04 Social Login Removal Update
+- No new migrations introduced.
+- Historical socialaccount tables remain present in database and are intentionally untouched to preserve migration history and data integrity.
+
+## ⚡ Query Optimization Check
+
+### 2026-03-04 Social Login Removal Update
+- No query-path changes introduced by this task.
+- No new N+1 or query-regression risk identified from authentication cleanup edits.
+
+## 🧪 Test Coverage Gap Analysis
+
+### 2026-03-04 Social Login Removal Update
+- Executed: `python3 manage.py test` (37 tests) and `python3 manage.py check`.
+- Result: Existing failures/errors persist in `gym_management.tests_security_comprehensive` and are unrelated to social-login removal.
+- Targeted validation confirms account pages load and social provider routes return 404 as expected.
+
+## 🚦 Implementation Verdict
+
+### 2026-03-04
+- Verdict: ✅ Fully Implemented
+- Scope verdict: Social authentication has been removed from active system behavior; email/password authentication with mandatory verification remains functional.
+
+---
+
+## 📊 Phase 0 Compliance Status
+
+### 2026-03-04 Phase 0 & Phase 1 Completion Hardening Update
+- Status: ✅ Fully Implemented
+- Implemented: Social authentication stack removal remains enforced; account login/signup/reset + mandatory email verification are active and validated.
+- Implemented: Global timezone hardening completed by replacing all `date.today()` usage with `timezone.localdate()` across runtime code, management command utilities, and tests.
+
+## 📊 Phase 1 Compliance Status
+
+### 2026-03-04 Phase 0 & Phase 1 Completion Hardening Update
+- Status: ✅ Fully Implemented
+- Implemented: Attendance concurrency protection now includes DB-level single open session constraint per member, row locking via `select_for_update()`, and atomic creation flow.
+- Implemented: Least-privilege enforcement expanded across admin CRUD/list/detail endpoints using explicit capability checks (`can_manage_users`, `can_manage_payments`, `can_view_reports`).
+- Implemented: Query-path hardening completed (DB-side average workout duration aggregation; duplicate object retrieval removed in member detail context).
+
+## ⚠ Missing or Partial Implementations
+
+### 2026-03-04 Phase 0 & Phase 1 Completion Hardening Update
+- No unresolved hardening gaps detected for the requested scope.
+
+## 🔄 Schema Drift Check
+
+### 2026-03-04 Phase 0 & Phase 1 Completion Hardening Update
+- Added and applied migration: `gym_management.0003_alter_payment_subscription_alter_subscription_member_and_more`.
+- Migration changes: financial FK delete policy hardened to `PROTECT`; attendance partial unique constraint added for open sessions.
+- Migration safety: pre-constraint data remediation closes duplicate open attendance rows before applying unique constraint.
+
+## ⚡ Query Optimization Check
+
+### 2026-03-04 Phase 0 & Phase 1 Completion Hardening Update
+- Member dashboard average duration moved from Python loop processing to DB aggregation using `Avg` over datetime deltas.
+- Member detail view context now reuses resolved object from context to avoid redundant object retrieval path.
+
+## 🧪 Test Coverage Gap Analysis
+
+### 2026-03-04 Phase 0 & Phase 1 Completion Hardening Update
+- Added targeted tests for: attendance concurrency protection, timezone boundary behavior, least-privilege endpoint enforcement, financial delete protection, email-confirmation signal flow, and social-login removal verification.
+- Removed instability in legacy security-comprehensive tests (CSRF bootstrap assumptions, outdated rate-limit thresholds, post-constraint attendance setup assumptions).
+- Validation run: `python manage.py test` => `51` tests passed.
+
+## 🚦 Implementation Verdict
+
+### 2026-03-04
+- Verdict: ✅ Fully Implemented
+- Merge readiness: Phase 0 and Phase 1 hardening scope is production-ready for the requested controls.

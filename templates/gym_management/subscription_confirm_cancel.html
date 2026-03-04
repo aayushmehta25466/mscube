@@ -1,0 +1,80 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}Cancel Subscription - MScube Gym Management{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <!-- Warning Card -->
+        <div class="bg-darker-bg border border-red-500 rounded-xl p-8">
+            <div class="flex items-center justify-center w-16 h-16 bg-red-900/20 rounded-full mx-auto mb-6">
+                <i class="fas fa-times-circle text-3xl text-red-500"></i>
+            </div>
+            
+            <h1 class="text-2xl font-bold text-white text-center mb-4">Confirm Subscription Cancellation</h1>
+            
+            <div class="bg-dark-bg rounded-lg p-6 mb-6">
+                <p class="text-text-secondary text-center mb-4">
+                    Are you sure you want to cancel this subscription?
+                </p>
+                
+                <div class="border-t border-border pt-4 mt-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-text-secondary mb-1">Member:</p>
+                            <p class="text-white font-semibold">{{ subscription.member.user.full_name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-text-secondary mb-1">Plan:</p>
+                            <p class="text-white font-semibold">{{ subscription.plan.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-text-secondary mb-1">Start Date:</p>
+                            <p class="text-white font-semibold">{{ subscription.start_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-text-secondary mb-1">End Date:</p>
+                            <p class="text-white font-semibold">{{ subscription.end_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-text-secondary mb-1">Current Status:</p>
+                            <p class="text-white font-semibold">
+                                <span class="px-2 py-1 rounded text-xs
+                                    {% if subscription.status == 'active' %}bg-green-900/30 text-green-400
+                                    {% elif subscription.status == 'pending' %}bg-yellow-900/30 text-yellow-400
+                                    {% elif subscription.status == 'expired' %}bg-gray-900/30 text-gray-400
+                                    {% else %}bg-red-900/30 text-red-400{% endif %}">
+                                    {{ subscription.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6">
+                <p class="text-red-400 text-sm">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    This action cannot be undone. The member will immediately lose access to their subscription benefits.
+                </p>
+            </div>
+            
+            <form method="post" class="flex justify-center gap-4">
+                {% csrf_token %}
+                <a href="{% url 'gym_management:subscription_list' %}" 
+                   class="px-6 py-3 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Go Back
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold">
+                    <i class="fas fa-times-circle mr-2"></i>Cancel Subscription
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

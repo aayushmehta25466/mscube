@@ -3,20 +3,69 @@
 {% block title %}Attendance - MScube Gym{% endblock %}
 {% block header_title %}Attendance Log{% endblock %}
 
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
 {% block content %}
 <div class="space-y-6">
-    <!-- Header -->
+    <!-- Header -->  
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h2 class="text-xl font-semibold text-white">Attendance Records</h2>
             <p class="text-text-muted mt-1">Track member visits and gym usage</p>
         </div>
         
-        <!-- Live Check-in Monitor (Placeholder link if relevant) -->
-        <!-- <a href="#" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors flex items-center gap-2 w-max">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-            Live Monitor
-        </a> -->
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('checkin-modal').classList.remove('hidden')" 
+                    class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors font-semibold">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                Check In Member
+            </button>
+            <a href="{% url 'gym_management:attendance_report' %}" 
+               class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+                <i class="fas fa-chart-bar mr-2"></i>View Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Check-in Modal -->
+    <div id="checkin-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-card-bg border border-border rounded-xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-white">Check In Member</h3>
+                <button onclick="document.getElementById('checkin-modal').classList.add('hidden')" 
+                        class="text-text-muted hover:text-white">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form method="POST" action="{% url 'gym_management:attendance_checkin' %}">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text-secondary mb-2">Select Member</label>
+                        <select name="member_id" required 
+                                class="w-full bg-dark-bg border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors">
+                            <option value="">Choose a member...</option>
+                            {% for member in active_members %}
+                                <option value="{{ member.id }}">{{ member.user.full_name }} - {{ member.user.email }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" 
+                                class="flex-1 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors font-semibold">
+                            Check In
+                        </button>
+                        <button type="button" 
+                                onclick="document.getElementById('checkin-modal').classList.add('hidden')" 
+                                class="px-4 py-2 bg-dark-bg text-text-muted hover:text-white border border-border rounded-lg transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Stats Overview -->
@@ -28,7 +77,7 @@
                 </div>
                 <span class="text-sm font-medium text-text-muted uppercase tracking-wide">Total Check-ins</span>
             </div>
-            <div class="text-3xl font-bold text-white">{{ paginator.count|default:attendance_list|length }}</div>
+            <div class="text-3xl font-bold text-white">{{ paginator.count|default:attendance_records|length }}</div>
         </div>
 
         <div class="bg-card-bg border border-border rounded-xl p-5 shadow-sm">
@@ -38,11 +87,7 @@
                 </div>
                 <span class="text-sm font-medium text-text-muted uppercase tracking-wide">Currently Present</span>
             </div>
-            <!-- Note: Logic for 'Currently Present' depends on how context is passed. Assuming simple logic for now. -->
-            <div class="text-3xl font-bold text-white">
-                 --
-                 <!-- Ideally calculated in view, placeholder for now -->
-            </div>
+            <div class="text-3xl font-bold text-white">{{ currently_present_count|default:0 }}</div>
         </div>
 
         <div class="bg-card-bg border border-border rounded-xl p-5 shadow-sm">
@@ -129,7 +174,10 @@
                                 <div class="text-sm text-text-secondary">{{ att.check_out|date:"M d, Y" }}</div>
                                 <div class="text-xs text-text-muted mt-0.5">{{ att.check_out|date:"g:i A" }}</div>
                             {% else %}
-                                <span class="text-xs text-text-muted italic">-</span>
+                                <form method="POST" action="{% url 'gym_management:attendance_checkout' att.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs text-warning hover:text-white font-medium hover:underline">Check Out</button>
+                                </form>
                             {% endif %}
                         </td>
                         <td class="px-6 py-4">

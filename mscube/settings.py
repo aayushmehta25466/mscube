@@ -44,9 +44,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = getenv_bool('DEBUG', True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '').split(',') if host.strip()]
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
@@ -65,9 +65,6 @@ INSTALLED_APPS = [
     # Third-party apps
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.facebook',
     'axes',  # Login attempt tracking
     # 'django_ratelimit',  # Rate limiting (TODO: Configure Redis for production)
     
@@ -79,6 +76,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'gym_management.middleware.security_headers.SecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -86,6 +84,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # Required for allauth
+    'gym_management.middleware.audit.AuditMiddleware',
     'axes.middleware.AxesMiddleware',  # Must be last
 ]
 
@@ -102,6 +101,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.user_role_context',  # Inject user_role for navbar
             ],
         },
     },
@@ -184,12 +184,28 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ==================== CACHE SETTINGS ====================
 
-# Cache configuration (in-memory for development, use Redis in production)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',  # No caching in dev
+# Cache configuration (Redis for persistent rate limiting in production)
+USE_REDIS = getenv_bool('USE_REDIS', False)
+
+if USE_REDIS:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'KEY_PREFIX': 'mscube_cache',
+            'TIMEOUT': 300,  # Default cache timeout (5 minutes)
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'mscube-cache',
+        }
+    }
 
 # ==================== AUTHENTICATION SETTINGS ====================
 
@@ -200,7 +216,7 @@ SITE_ID = 1
 AUTHENTICATION_BACKENDS = [
     # Django default (username/password)
     'django.contrib.auth.backends.ModelBackend',
-    # Allauth (email/social)
+    # Allauth (account authentication)
     'allauth.account.auth_backends.AuthenticationBackend',
     # Axes (for tracking failed logins)
     'axes.backends.AxesStandaloneBackend',
@@ -231,13 +247,10 @@ ACCOUNT_RATE_LIMITS = {
     'login_failed': '5/5m',  # 5 failed logins per 5 minutes
 }
 
-# Social Account Settings
-SOCIALACCOUNT_AUTO_SIGNUP = True
-SOCIALACCOUNT_EMAIL_VERIFICATION = 'optional'
-SOCIALACCOUNT_QUERY_EMAIL = True
+ACCOUNT_ADAPTER = 'accounts.adapters.AccountAdapter'
 
 # Login/Logout URLs
-LOGIN_REDIRECT_URL = '/management/my-dashboard/'
+LOGIN_REDIRECT_URL = '/accounts/dashboard/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login/'
 
@@ -266,10 +279,44 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    CSRF_TRUSTED_ORIGINS = [
+        origin.strip() for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if origin.strip()
+    ]
+
+LOG_DIR = BASE_DIR / 'logs'
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'security_file': {
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'security.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'security.audit': {
+            'handlers': ['console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 

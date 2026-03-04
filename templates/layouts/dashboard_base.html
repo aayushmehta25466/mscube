@@ -58,7 +58,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0">
         <!-- Top Navbar -->
         <header class="flex items-center justify-between h-16 px-6 border-b border-border bg-dark-bg/80 backdrop-blur-md sticky top-0 z-30">
             <div class="flex items-center gap-4">
@@ -76,23 +76,41 @@
                 </button>
                 
                 <!-- User Menu -->
-                <div class="relative" x-data="{ userMenuOpen: false }">
+                <div class="relative" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
                     <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-3 ml-2 rounded-lg hover:bg-white/5 px-2 py-1.5 transition-colors">
                         <div class="hidden md:block text-right">
                             <p class="text-sm font-medium text-white">{{ request.user.full_name|default:request.user.username }}</p>
-                            <p class="text-xs text-text-muted">{{ user_role|default:"Member"|title }}</p>
+                            <p class="text-xs font-semibold
+                                {% if user_role == 'admin' %}text-red-400
+                                {% elif user_role == 'trainer' %}text-green-400
+                                {% elif user_role == 'staff' %}text-yellow-400
+                                {% else %}text-primary{% endif %}">
+                                {{ user_role|default:"member"|capfirst }}
+                            </p>
                         </div>
-                        <div class="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-white font-bold ring-2 ring-border">
+                        <div class="h-9 w-9 rounded-full
+                            {% if user_role == 'admin' %}bg-red-500
+                            {% elif user_role == 'trainer' %}bg-green-600
+                            {% elif user_role == 'staff' %}bg-yellow-500
+                            {% else %}bg-primary{% endif %}
+                            flex items-center justify-center text-white font-bold ring-2 ring-border">
                             {{ request.user.full_name|first|default:request.user.username|first|upper }}
                         </div>
                         <svg class="hidden md:block w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
 
-                    <div x-show="userMenuOpen" @click.outside="userMenuOpen = false" x-transition
+                    <div x-show="userMenuOpen" x-transition
                          class="absolute right-0 mt-2 w-56 bg-card-bg border border-border rounded-xl shadow-lg overflow-hidden z-50" x-cloak>
                         <div class="px-4 py-3 border-b border-border">
                             <p class="text-sm font-semibold text-white truncate">{{ request.user.full_name|default:request.user.username }}</p>
                             <p class="text-xs text-text-muted truncate">{{ request.user.email }}</p>
+                            <span class="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-xs font-semibold
+                                {% if user_role == 'admin' %}bg-red-500/20 text-red-400
+                                {% elif user_role == 'trainer' %}bg-green-600/20 text-green-400
+                                {% elif user_role == 'staff' %}bg-yellow-500/20 text-yellow-400
+                                {% else %}bg-primary/20 text-primary{% endif %}">
+                                {{ user_role|default:"member"|capfirst }}
+                            </span>
                         </div>
                         <div class="py-2">
                             <a href="{% url 'accounts_dashboard_redirect' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
@@ -119,7 +137,7 @@
         </header>
 
         <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8">
             {% block content %}{% endblock %}
         </main>
     </div>

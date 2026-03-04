@@ -2,6 +2,7 @@ from django.urls import path, include
 from .views import (
     ProfileView,
     ProfileUpdateView,
+    CustomPasswordChangeView,
     dashboard_redirect,
     CustomLoginView,
     CustomSignupView,
@@ -19,6 +20,7 @@ urlpatterns = [
     # Custom profile views
     path('profile/', ProfileView.as_view(), name='accounts_profile'),
     path('profile/update/', ProfileUpdateView.as_view(), name='accounts_profile_update'),
+    path('profile/password/', CustomPasswordChangeView.as_view(), name='accounts_password_change'),
     path('dashboard/', dashboard_redirect, name='accounts_dashboard_redirect'),
     
     # Django-allauth URLs (signup, login, logout, password reset, email verification)

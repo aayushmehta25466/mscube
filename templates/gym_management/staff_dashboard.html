@@ -60,9 +60,49 @@
     <div class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
         <div class="flex items-center justify-between p-6 border-b border-border">
             <h3 class="text-lg font-bold text-white">Currently Checked In</h3>
-            <button class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-accent transition-colors">
+            <button onclick="document.getElementById('checkin-modal').classList.remove('hidden')" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:bg-accent transition-colors">
                 Manual Check-in
             </button>
+        </div>
+        
+        <!-- Check-in Modal -->
+        <div id="checkin-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div class="bg-card-bg border border-border rounded-xl p-6 max-w-md w-full mx-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white">Check In Member</h3>
+                    <button onclick="document.getElementById('checkin-modal').classList.add('hidden')" 
+                            class="text-text-muted hover:text-white">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+                <form method="POST" action="{% url 'gym_management:attendance_checkin' %}">
+                    {% csrf_token %}
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-secondary mb-2">Select Member</label>
+                            <select name="member_id" required 
+                                    class="w-full bg-dark-bg border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors">
+                                <option value="">Choose a member...</option>
+                                {% for member in active_members %}
+                                    <option value="{{ member.id }}">{{ member.user.full_name }} - {{ member.user.email }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" 
+                                    class="flex-1 px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 transition-colors font-semibold">
+                                Check In
+                            </button>
+                            <button type="button" 
+                                    onclick="document.getElementById('checkin-modal').classList.add('hidden')" 
+                                    class="px-4 py-2 bg-dark-bg text-text-muted hover:text-white border border-border rounded-lg transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
         
         <div class="overflow-x-auto">
@@ -88,9 +128,12 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-text-secondary">{{ record.check_in|date:"g:i A" }}</td>
-                            <td class="px-6 py-4 text-text-secondary">{{ record.duration|default:"Processing..." }}</td>
+                            <td class="px-6 py-4 text-text-secondary">{{ record.duration|default:"-" }}</td>
                             <td class="px-6 py-4 text-right">
-                                <button class="text-xs font-medium text-danger hover:underline">Check Out</button>
+                                <form method="POST" action="{% url 'gym_management:attendance_checkout' record.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-xs font-medium text-danger hover:underline">Check Out</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}

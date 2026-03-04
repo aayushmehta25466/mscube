@@ -3,6 +3,10 @@
 {% block title %}Payments - MScube Gym{% endblock %}
 {% block header_title %}Transactions{% endblock %}
 
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
 {% block content %}
 <div class="space-y-6">
     <div class="flex items-center justify-between">
@@ -10,6 +14,10 @@
             <h2 class="text-xl font-semibold text-white">Payment History</h2>
             <p class="text-text-muted mt-1">View all transactions</p>
         </div>
+        <a href="{% url 'gym_management:payment_create' %}" 
+           class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+            <i class="fas fa-plus mr-2"></i>Record Payment
+        </a>
     </div>
 
     <div class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">

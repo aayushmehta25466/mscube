@@ -1,0 +1,158 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}{{ title }} - MScube Gym Management{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">{{ title|default:"Add Payment Record" }}</h1>
+            <p class="text-text-secondary">Process a payment for a member subscription</p>
+        </div>
+        <a href="{% url 'gym_management:payment_list' %}" 
+           class="px-4 py-2 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+            ← Back to Payments
+        </a>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto"
+         x-data="{
+            selectedSubscription: null,
+            subscriptions: {},
+            init() {
+                // Build lookup map from hidden JSON data
+                document.querySelectorAll('#subscription-data [data-sub]').forEach(el => {
+                    this.subscriptions[el.dataset.sub] = {
+                        member: el.dataset.member,
+                        plan: el.dataset.plan,
+                        price: el.dataset.price,
+                        status: el.dataset.status,
+                        start: el.dataset.start,
+                        end: el.dataset.end
+                    };
+                });
+            },
+            updateInfo(val) {
+                this.selectedSubscription = val ? this.subscriptions[val] : null;
+            }
+         }">
+
+        <!-- Hidden data store for Alpine -->
+        <div id="subscription-data" class="hidden">
+            {% for sub in form.subscription.field.queryset %}
+            <span data-sub="{{ sub.pk }}"
+                  data-member="{{ sub.member.user.full_name }}"
+                  data-plan="{{ sub.plan.name }}"
+                  data-price="{{ sub.plan.price }}"
+                  data-status="{{ sub.status }}"
+                  data-start="{{ sub.start_date }}"
+                  data-end="{{ sub.end_date }}"></span>
+            {% endfor %}
+        </div>
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+                <p class="text-red-400">{{ form.non_field_errors }}</p>
+            </div>
+            {% endif %}
+
+            <div class="space-y-6">
+                <!-- Subscription Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Select Member &amp; Subscription <span class="text-red-500">*</span>
+                    </label>
+                    <div @change="updateInfo($event.target.value)">
+                        {{ form.subscription }}
+                    </div>
+                    {% if form.subscription.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.subscription.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-text-muted mt-1">
+                        Showing pending &amp; active subscriptions. Format: Member · Plan · Price [Status]
+                    </p>
+                </div>
+
+                <!-- Dynamic Subscription Info -->
+                <div x-show="selectedSubscription" x-cloak
+                     class="bg-primary/10 border border-primary/30 rounded-xl p-5 space-y-3">
+                    <h3 class="text-sm font-semibold text-primary uppercase tracking-wide">Payment Summary</h3>
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <div>
+                            <p class="text-text-muted text-xs uppercase tracking-wide">Member</p>
+                            <p class="text-white font-semibold" x-text="selectedSubscription?.member"></p>
+                        </div>
+                        <div>
+                            <p class="text-text-muted text-xs uppercase tracking-wide">Plan</p>
+                            <p class="text-white font-semibold" x-text="selectedSubscription?.plan"></p>
+                        </div>
+                        <div>
+                            <p class="text-text-muted text-xs uppercase tracking-wide">Period</p>
+                            <p class="text-white font-mono text-xs"
+                               x-text="(selectedSubscription?.start ?? '') + ' → ' + (selectedSubscription?.end ?? '')"></p>
+                        </div>
+                        <div>
+                            <p class="text-text-muted text-xs uppercase tracking-wide">Subscription Status</p>
+                            <p class="font-semibold"
+                               :class="selectedSubscription?.status === 'pending' ? 'text-yellow-400' : 'text-green-400'"
+                               x-text="selectedSubscription?.status === 'pending' ? '⏳ Pending' : '✅ Active'"></p>
+                        </div>
+                    </div>
+                    <div class="border-t border-primary/20 pt-3 flex items-center justify-between">
+                        <p class="text-text-secondary text-sm">Amount to Charge</p>
+                        <p class="text-2xl font-black text-white">
+                            NPR <span x-text="Number(selectedSubscription?.price).toLocaleString('en-NP', {minimumFractionDigits: 2})"></span>
+                        </p>
+                    </div>
+                    <p class="text-xs text-text-muted">
+                        Amount is automatically set from the plan price and cannot be manually changed.
+                    </p>
+                </div>
+                
+                <!-- Payment Method -->
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Payment Method <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.payment_method }}
+                    {% if form.payment_method.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.payment_method.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Info Box -->
+            <div class="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
+                <p class="text-blue-400 text-sm mb-2 font-semibold">
+                    Payment Processing Notes:
+                </p>
+                <ul class="text-blue-300 text-sm ml-4 list-disc space-y-1">
+                    <li><strong>Cash / Card:</strong> Marked as completed immediately — subscription activates instantly.</li>
+                    <li><strong>eSewa / Online:</strong> Stays pending until confirmed by payment gateway.</li>
+                </ul>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-4 pt-4 border-t border-border">
+                <a href="{% url 'gym_management:payment_list' %}" 
+                   class="px-6 py-3 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+                    💳 {{ submit_text|default:"Record Payment" }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}Attendance Report - MScube Gym Management{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Attendance Reports</h1>
+            <p class="text-text-secondary">Analytics and insights on member attendance</p>
+        </div>
+        <a href="{% url 'gym_management:attendance_list' %}" 
+           class="px-4 py-2 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+            <i class="fas fa-list mr-2"></i>View Attendance Log
+        </a>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="bg-darker-bg border border-border rounded-xl p-6 mb-6">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-text-secondary mb-2">Report Period</label>
+                <select name="filter" class="w-full bg-dark-bg border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors">
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="week" {% if date_filter == 'week' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="month" {% if date_filter == 'month' %}selected{% endif %}>This Month</option>
+                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Range</option>
+                </select>
+            </div>
+            
+            <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-text-secondary mb-2">Start Date</label>
+                <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" 
+                       class="w-full bg-dark-bg border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors [color-scheme:dark]">
+            </div>
+            
+            <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-text-secondary mb-2">End Date</label>
+                <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" 
+                       class="w-full bg-dark-bg border border-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary transition-colors [color-scheme:dark]">
+            </div>
+            
+            <div class="md:col-span-3 flex items-end">
+                <button type="submit" 
+                        class="w-full px-4 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+                    <i class="fas fa-chart-bar mr-2"></i>Generate Report
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Total Visits -->
+        <div class="bg-darker-bg border border-border rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-900/30 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-door-open text-2xl text-blue-400"></i>
+                </div>
+            </div>
+            <h3 class="text-text-secondary text-sm mb-1">Total Visits</h3>
+            <p class="text-3xl font-bold text-white">{{ total_visits }}</p>
+            <p class="text-xs text-text-secondary mt-2">
+                {{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}
+            </p>
+        </div>
+
+        <!-- Unique Members -->
+        <div class="bg-darker-bg border border-border rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-900/30 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-2xl text-green-400"></i>
+                </div>
+            </div>
+            <h3 class="text-text-secondary text-sm mb-1">Unique Members</h3>
+            <p class="text-3xl font-bold text-white">{{ unique_members }}</p>
+            <p class="text-xs text-text-secondary mt-2">
+                Visited during period
+            </p>
+        </div>
+
+        <!-- Average Daily Visits -->
+        <div class="bg-darker-bg border border-border rounded-xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-900/30 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-2xl text-purple-400"></i>
+                </div>
+            </div>
+            <h3 class="text-text-secondary text-sm mb-1">Avg. Daily Visits</h3>
+            <p class="text-3xl font-bold text-white">{{ avg_visits_per_day }}</p>
+            <p class="text-xs text-text-secondary mt-2">
+                Per day average
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Peak Hours -->
+        <div class="bg-darker-bg border border-border rounded-xl p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-clock text-primary mr-2"></i>Peak Hours
+            </h2>
+            {% if peak_hours %}
+            <div class="space-y-3">
+                {% for hour in peak_hours %}
+                <div class="flex items-center justify-between">
+                    <span class="text-text-secondary">{{ hour.hour }}</span>
+                    <div class="flex items-center gap-3 flex-1 ml-4">
+                        <div class="flex-1 bg-dark-bg rounded-full h-2 overflow-hidden">
+                            <div class="bg-primary h-full rounded-full" 
+                                 style="width: {{ hour.count|floatformat:0 }}%"></div>
+                        </div>
+                        <span class="text-white font-semibold w-12 text-right">{{ hour.count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-text-secondary text-center py-4">No data available for this period</p>
+            {% endif %}
+        </div>
+
+        <!-- Top Members -->
+        <div class="bg-darker-bg border border-border rounded-xl p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-trophy text-yellow-400 mr-2"></i>Most Active Members
+            </h2>
+            {% if top_members %}
+            <div class="space-y-3">
+                {% for member in top_members %}
+                <div class="flex items-center justify-between p-3 bg-dark-bg rounded-lg hover:bg-dark-bg/70 transition-colors">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                            {{ forloop.counter }}
+                        </div>
+                        <a href="{% url 'gym_management:member_detail' member.member__id %}" 
+                           class="text-white hover:text-primary transition-colors">
+                            {{ member.member__user__full_name }}
+                        </a>
+                    </div>
+                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-lg text-sm font-semibold">
+                        {{ member.visit_count }} visits
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-text-secondary text-center py-4">No attendance records for this period</p>
+            {% endif %}
+        </div>
+
+        <!-- Daily Breakdown -->
+        <div class="lg:col-span-2 bg-darker-bg border border-border rounded-xl p-6">
+            <h2 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-calendar-day text-primary mr-2"></i>Daily Breakdown
+            </h2>
+            {% if daily_stats %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-border">
+                            <th class="text-left py-3 px-4 text-text-secondary text-sm font-semibold">Date</th>
+                            <th class="text-right py-3 px-4 text-text-secondary text-sm font-semibold">Visits</th>
+                            <th class="text-left py-3 px-4 text-text-secondary text-sm font-semibold">Visual</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in daily_stats %}
+                        <tr class="border-b border-border/50 hover:bg-dark-bg/50 transition-colors">
+                            <td class="py-3 px-4 text-white">
+                                {{ day.date|date:"D, M d, Y" }}
+                            </td>
+                            <td class="py-3 px-4 text-white font-semibold text-right">
+                                {{ day.count }}
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-dark-bg rounded-full h-2 max-w-xs">
+                                        <div class="bg-gradient-to-r from-primary to-accent h-full rounded-full" 
+                                             style="width: {{ day.count|floatformat:0 }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-text-secondary text-center py-8">No attendance data for this period</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

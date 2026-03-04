@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from decimal import Decimal
-from datetime import date, datetime, timedelta
+import uuid
 from accounts.models import Member
 
 
@@ -52,7 +52,7 @@ class Subscription(models.Model):
     
     member = models.ForeignKey(
         Member,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='subscriptions'
     )
     plan = models.ForeignKey(
@@ -94,12 +94,13 @@ class Subscription(models.Model):
     
     def is_active_subscription(self):
         """Check if subscription is currently active."""
-        return self.status == 'active' and self.end_date >= date.today()
+        return self.status == 'active' and self.end_date >= timezone.localdate()
     
     def days_remaining(self):
         """Calculate days remaining in subscription."""
-        if self.end_date >= date.today():
-            return (self.end_date - date.today()).days
+        today = timezone.localdate()
+        if self.end_date >= today:
+            return (self.end_date - today).days
         return 0
     
     def activate(self):
@@ -114,7 +115,7 @@ class Subscription(models.Model):
     
     def check_expiry(self):
         """Check and update subscription if expired."""
-        if self.status == 'active' and self.end_date < date.today():
+        if self.status == 'active' and self.end_date < timezone.localdate():
             self.status = 'expired'
             self.save()
 
@@ -138,7 +139,7 @@ class Payment(models.Model):
     
     subscription = models.ForeignKey(
         Subscription,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='payments'
     )
     amount = models.DecimalField(
@@ -203,10 +204,15 @@ class Payment(models.Model):
         self.save()
     
     def save(self, *args, **kwargs):
-        # Auto-generate transaction ID if not set
+        # Auto-generate secure transaction ID if not set
         if not self.transaction_id:
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            self.transaction_id = f"TXN{timestamp}{self.subscription.member.id}"
+            for _ in range(5):
+                candidate = f"TXN{uuid.uuid4().hex.upper()[:16]}"
+                if not Payment.objects.filter(transaction_id=candidate).exists():
+                    self.transaction_id = candidate
+                    break
+            if not self.transaction_id:
+                raise ValueError('Unable to generate unique transaction ID.')
         super().save(*args, **kwargs)
 
 
@@ -235,6 +241,13 @@ class Attendance(models.Model):
             models.Index(fields=['member', 'check_in']),
             models.Index(fields=['member', 'date']),
             models.Index(fields=['date']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['member'],
+                condition=models.Q(check_out__isnull=True),
+                name='unique_open_attendance_per_member',
+            ),
         ]
     
     def __str__(self):

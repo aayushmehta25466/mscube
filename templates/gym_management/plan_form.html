@@ -1,0 +1,124 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}{{ title }} - MScube Gym Management{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_admin_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">{{ title }}</h1>
+            <p class="text-text-secondary">Configure membership plan details</p>
+        </div>
+        <a href="{% url 'gym_management:plan_list' %}" 
+           class="px-4 py-2 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Plans
+        </a>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-4">
+                <p class="text-red-400">{{ form.non_field_errors }}</p>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Plan Name -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Plan Name <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Price -->
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Price (NPR) <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.price }}
+                    {% if form.price.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.price.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Duration -->
+                <div>
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Duration (Days) <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.duration_days }}
+                    {% if form.duration_days.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.duration_days.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-text-secondary mt-1">
+                        Common: 30 (monthly), 90 (quarterly), 365 (yearly)
+                    </p>
+                </div>
+                
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Description <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.description.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <!-- Features -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-text-secondary mb-2">
+                        Features
+                    </label>
+                    {{ form.features }}
+                    {% if form.features.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.features.errors.0 }}</p>
+                    {% endif %}
+                    <p class="text-xs text-text-secondary mt-1">
+                        Enter one feature per line
+                    </p>
+                </div>
+                
+                <!-- Is Active -->
+                <div class="md:col-span-2">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        {{ form.is_active }}
+                        <span class="text-sm font-medium text-text-secondary">
+                            Active (visible to members for signup)
+                        </span>
+                    </label>
+                    {% if form.is_active.errors %}
+                    <p class="text-red-400 text-sm mt-1">{{ form.is_active.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end gap-4 pt-4 border-t border-border">
+                <a href="{% url 'gym_management:plan_list' %}" 
+                   class="px-6 py-3 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
+                    <i class="fas fa-save mr-2"></i>{{ submit_text }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

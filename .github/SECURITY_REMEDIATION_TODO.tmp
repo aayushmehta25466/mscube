@@ -1,0 +1,10 @@
+1) Build centralized security audit logging middleware + logger config
+2) Implement object-level authorization mixin and apply to sensitive views
+3) Harden attendance checkout/checkin access + safe redirects + trace logging
+4) Secure transaction ID generation (UUID4) + data migration for legacy IDs
+5) Add rate limiting for attendance checkin + payment create endpoints
+6) Add subscription service row locks + idempotency/double-process protection
+7) Enforce/document superuser email verification policy in signals/admin flows
+8) Add/validate security headers in production settings
+9) Hidden-vulnerability scan and patch (mass assignment, CSRF, redirects, raw SQL)
+10) Run migrations, checks, and focused security tests; summarize risk level
