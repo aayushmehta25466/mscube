@@ -161,27 +161,24 @@
             </div>
 
             <!-- Tabs / Sections for History -->
-            <div x-data="{ activeTab: 'attendance' }">
+            <div>
                 <div class="flex border-b border-border mb-6">
-                    <button @click="activeTab = 'attendance'" 
-                            :class="activeTab === 'attendance' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-white'"
-                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors">
+                    <button id="tab-btn-attendance" type="button"
+                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors border-primary text-primary">
                         Attendance History
                     </button>
-                    <button @click="activeTab = 'payments'" 
-                            :class="activeTab === 'payments' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-white'"
-                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors">
+                    <button id="tab-btn-payments" type="button"
+                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors border-transparent text-text-muted hover:text-white">
                         Payment History
                     </button>
-                    <button @click="activeTab = 'subscriptions'" 
-                            :class="activeTab === 'subscriptions' ? 'border-primary text-primary' : 'border-transparent text-text-muted hover:text-white'"
-                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors">
+                    <button id="tab-btn-subscriptions" type="button"
+                            class="px-4 py-2 border-b-2 font-medium text-sm transition-colors border-transparent text-text-muted hover:text-white">
                         Past Subscriptions
                     </button>
                 </div>
 
                 <!-- Attendance Tab -->
-                <div x-show="activeTab === 'attendance'" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
+                <div id="tab-panel-attendance" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
                     <table class="w-full text-left">
                         <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
                             <tr>
@@ -218,7 +215,7 @@
                 </div>
 
                 <!-- Payments Tab -->
-                <div x-show="activeTab === 'payments'" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm" x-cloak>
+                <div id="tab-panel-payments" style="display:none;" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
                     <table class="w-full text-left">
                         <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
                             <tr>
@@ -251,7 +248,7 @@
                 </div>
 
                 <!-- Subscriptions Tab -->
-                <div x-show="activeTab === 'subscriptions'" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm" x-cloak>
+                <div id="tab-panel-subscriptions" style="display:none;" class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
                     <table class="w-full text-left">
                         <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
                             <tr>
@@ -286,4 +283,38 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const TABS = ['attendance', 'payments', 'subscriptions'];
+
+    function activateTab(name) {
+        TABS.forEach(function (t) {
+            var btn   = document.getElementById('tab-btn-' + t);
+            var panel = document.getElementById('tab-panel-' + t);
+            if (!btn || !panel) return;
+            if (t === name) {
+                btn.classList.remove('border-transparent', 'text-text-muted', 'hover:text-white');
+                btn.classList.add('border-primary', 'text-primary');
+                panel.style.display = 'block';
+            } else {
+                btn.classList.remove('border-primary', 'text-primary');
+                btn.classList.add('border-transparent', 'text-text-muted', 'hover:text-white');
+                panel.style.display = 'none';
+            }
+        });
+    }
+
+    TABS.forEach(function (t) {
+        var btn = document.getElementById('tab-btn-' + t);
+        if (btn) {
+            btn.addEventListener('click', function () { activateTab(t); });
+        }
+    });
+
+    activateTab('attendance');
+})();
+</script>
 {% endblock %}

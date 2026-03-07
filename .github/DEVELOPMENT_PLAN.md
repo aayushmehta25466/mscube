@@ -26,9 +26,10 @@ A comprehensive gym management system handling member registration, trainer/staf
 
 **Authentication System:**
 - Custom User model with email + username login
-- Email verification mandatory via django-allauth
-- OAuth integration (Google, Facebook) ready
-- Brute force protection (django-axes) - 5 attempts = 1 hour lockout
+- Email/password authentication only — no OAuth or social providers
+- Email verification configurable: mandatory by default, togglable via `ACCOUNT_EMAIL_VERIFICATION_MODE` for development/testing
+- Production safety guard: `DEBUG=False` forces mandatory verification or server refuses to start
+- Brute force protection (django-axes) — 5 attempts = 1 hour lockout
 - Signal-driven profile creation post email verification
 
 **Profile Management:**
@@ -67,7 +68,6 @@ A comprehensive gym management system handling member registration, trainer/staf
 #### 1.1 Authentication Templates ⏳
 - [ ] Login page (`templates/accounts/login.html`)
   - Username or email input
-  - OAuth buttons (Google, Facebook)
   - Remember me checkbox
   - Password reset link
 - [ ] Signup page (`templates/accounts/signup.html`)

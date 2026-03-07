@@ -1,30 +1,34 @@
+import io
 import json
 import logging
+
+import qrcode
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.views import View
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.db import transaction, IntegrityError
 from django.db.models import Count, Sum, Q, Avg, Prefetch, F
-from django.http import HttpResponseNotAllowed, Http404
+from django.http import HttpResponseNotAllowed, Http404, HttpResponse, HttpResponseForbidden
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.utils import timezone
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from datetime import date, timedelta
 from django_ratelimit.decorators import ratelimit
 from accounts.mixins import AdminRequiredMixin, TrainerRequiredMixin, StaffRequiredMixin, MemberRequiredMixin, StaffOrAdminRequiredMixin
 from accounts.models import Member, Trainer, Staff, User
 from accounts.utils import get_user_role, can_manage_users, can_manage_payments, can_view_reports
-from .models import MembershipPlan, Subscription, Payment, Attendance
+from .models import MembershipPlan, Subscription, Payment, Attendance, Notification
 from .mixins import ObjectOwnershipMixin, get_client_ip
 from .forms import (
     MemberCreateForm, MemberUpdateForm, MembershipPlanForm,
-    SubscriptionCreateForm, SubscriptionUpdateForm, PaymentCreateForm
+    SubscriptionForm, PaymentCreateForm
 )
 from .services import SubscriptionService, AttendanceService, PaymentService
 
@@ -60,8 +64,8 @@ class AdminDashboardView(AdminRequiredMixin, AdminCapabilityMixin, TemplateView)
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Efficient aggregate queries
-        context['total_members'] = Member.objects.filter(is_active=True).count()
+        # Efficient aggregate queries (total registered members for dashboard metrics)
+        context['total_members'] = Member.all_objects.count()
         context['total_trainers'] = Trainer.objects.filter(is_active=True).count()
         context['total_staff'] = Staff.objects.filter(is_active=True).count()
         context['active_subscriptions'] = Subscription.objects.filter(status='active').count()
@@ -118,7 +122,7 @@ class MemberListView(AdminRequiredMixin, AdminCapabilityMixin, ListView):
     permission_denied_message = 'You do not have permission to manage users.'
     
     def get_queryset(self):
-        queryset = Member.objects.select_related('user').filter(is_active=True)
+        queryset = Member.objects.select_related('user')
         
         # Search
         search = self.request.GET.get('search')
@@ -153,7 +157,7 @@ class MemberDetailView(AdminRequiredMixin, AdminCapabilityMixin, ObjectOwnership
     permission_denied_message = 'You do not have permission to manage users.'
 
     def get_queryset(self):
-        return Member.objects.select_related('user').filter(is_active=True)
+        return Member.objects.select_related('user')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -361,7 +365,7 @@ class SubscriptionListView(AdminRequiredMixin, AdminCapabilityMixin, ListView):
 class SubscriptionCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateView):
     """Create a new subscription for a member."""
     model = Subscription
-    form_class = SubscriptionCreateForm
+    form_class = SubscriptionForm
     template_name = 'gym_management/subscription_form.html'
     success_url = reverse_lazy('gym_management:subscription_list')
     permission_checker = can_manage_payments
@@ -371,7 +375,12 @@ class SubscriptionCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateVie
         if not can_manage_payments(self.request.user):
             raise PermissionDenied('You do not have permission to manage subscriptions.')
 
-        subscription = form.save()
+        try:
+            subscription = form.save()
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+
         audit_logger.info(
             'SUBSCRIPTION_CREATE | user=%s | role=%s | subscription_id=%s | member_id=%s | plan_id=%s | status=%s | ip=%s',
             self.request.user.email,
@@ -387,7 +396,7 @@ class SubscriptionCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateVie
             f'Subscription created for {subscription.member.user.full_name}. '
             f'Please create a payment to activate it.'
         )
-        return redirect('gym_management:payment_create')
+        return redirect(f"{reverse('gym_management:payment_create')}?subscription={subscription.pk}")
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -401,9 +410,9 @@ class SubscriptionCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateVie
 
 
 class SubscriptionUpdateView(AdminRequiredMixin, AdminCapabilityMixin, UpdateView):
-    """Update a subscription with optional payment recording."""
+    """Update subscription details without mutating payment records."""
     model = Subscription
-    form_class = SubscriptionUpdateForm
+    form_class = SubscriptionForm
     template_name = 'gym_management/subscription_form.html'
     success_url = reverse_lazy('gym_management:subscription_list')
     permission_checker = can_manage_payments
@@ -413,54 +422,39 @@ class SubscriptionUpdateView(AdminRequiredMixin, AdminCapabilityMixin, UpdateVie
         if not can_manage_payments(self.request.user):
             raise PermissionDenied('You do not have permission to manage subscriptions.')
 
-        # Capture original values BEFORE form.save() mutates self.object
-        original_status = self.object.status
-        original_plan_name = self.object.plan.name
+        original_subscription = Subscription.objects.select_related('plan').get(pk=self.object.pk)
+        original_status = original_subscription.status
+        original_plan_name = original_subscription.plan.name
 
-        subscription = form.save()
-        payment_method = form.cleaned_data.get('payment_method')
+        try:
+            subscription, plan_changed = SubscriptionService.update_subscription(
+                subscription=self.object,
+                plan=form.cleaned_data['plan'],
+                start_date=form.cleaned_data['start_date'],
+            )
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
 
         audit_logger.info(
-            'SUBSCRIPTION_UPDATE | user=%s | role=%s | subscription_id=%s | old_status=%s | new_status=%s | old_plan=%s | new_plan=%s | ip=%s',
+            'SUBSCRIPTION_UPDATE | user=%s | role=%s | source_subscription_id=%s | result_subscription_id=%s | old_status=%s | new_status=%s | old_plan=%s | new_plan=%s | plan_changed=%s | ip=%s',
             self.request.user.email,
             get_user_role(self.request.user),
+            self.object.id,
             subscription.id,
             original_status,
             subscription.status,
             original_plan_name,
             subscription.plan.name,
+            plan_changed,
             get_client_ip(self.request),
         )
 
-        # Record payment if a payment method was chosen
-        if payment_method:
-            payment = Payment.objects.create(
-                subscription=subscription,
-                amount=subscription.plan.price,
-                payment_method=payment_method,
-                status='pending',
-            )
-            if payment_method in ['cash', 'card']:
-                PaymentService.complete_payment(payment)
-                audit_logger.info(
-                    'PAYMENT_CREATE | user=%s | role=%s | payment_id=%s | transaction_id=%s | method=%s | status=completed | ip=%s',
-                    self.request.user.email, get_user_role(self.request.user),
-                    payment.pk, payment.transaction_id, payment.payment_method,
-                    get_client_ip(self.request),
-                )
-                messages.success(
-                    self.request,
-                    f'Subscription updated and payment of NPR {subscription.plan.price:,.2f} '
-                    f'recorded for {subscription.member.user.full_name}.'
-                )
-            else:
-                messages.success(
-                    self.request,
-                    f'Subscription updated. Payment record created (pending gateway confirmation).'
-                )
-        else:
-            messages.success(self.request, 'Subscription updated successfully.')
+        if plan_changed:
+            messages.success(self.request, 'New subscription created. Please record payment.')
+            return redirect(f"{reverse('gym_management:payment_create')}?subscription={subscription.pk}")
 
+        messages.success(self.request, 'Subscription updated successfully.')
         return redirect(self.success_url)
     
     def get_context_data(self, **kwargs):
@@ -473,6 +467,8 @@ class SubscriptionUpdateView(AdminRequiredMixin, AdminCapabilityMixin, UpdateVie
         context['member_name'] = subscription.member.user.full_name
         context['member_email'] = subscription.member.user.email
         context['current_plan'] = subscription.plan
+        plans = MembershipPlan.objects.filter(is_active=True).values('id', 'duration_days', 'price', 'name')
+        context['plan_data_json'] = json.dumps({str(p['id']): {'duration_days': p['duration_days'], 'price': str(p['price']), 'name': p['name']} for p in plans})
         return context
 
 
@@ -519,7 +515,7 @@ def assign_subscription_to_member(request, member_id):
     if not can_manage_payments(request.user):
         raise PermissionDenied('You do not have permission to assign subscriptions.')
     
-    member = get_object_or_404(Member.objects.select_related('user'), id=member_id, is_active=True)
+    member = get_object_or_404(Member.objects.select_related('user'), id=member_id)
     
     plan_id = request.POST.get('plan_id')
     payment_method = request.POST.get('payment_method', 'cash')
@@ -551,6 +547,8 @@ def assign_subscription_to_member(request, member_id):
         )
         return redirect('gym_management:member_detail', pk=member.id)
     
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
     except ValueError:
         messages.error(request, 'Unable to assign subscription due to validation rules.')
     except MembershipPlan.DoesNotExist:
@@ -629,13 +627,22 @@ class PaymentCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateView):
             messages.error(self.request, 'Too many payment attempts. Please wait a minute and try again.')
             return redirect(self.success_url)
 
-        payment = form.save(commit=False)
-        
-        # For cash/card payments, mark as completed immediately
+        # Save with default pending status.
+        # All financial transition logic (completion, subscription activation,
+        # old-subscription expiry) is centralised in PaymentService.complete_payment().
+        try:
+            payment = form.save()
+        except ValidationError as exc:
+            form.add_error(None, exc)
+            return self.form_invalid(form)
+
         if payment.payment_method in ['cash', 'card']:
-            payment.status = 'completed'
-            payment.completed_at = timezone.now()
-            payment.save()
+            try:
+                payment, expired_count = PaymentService.complete_payment(payment)
+            except (ValidationError, ValueError) as exc:
+                form.add_error(None, exc)
+                return self.form_invalid(form)
+
             audit_logger.info(
                 'PAYMENT_CREATE | user=%s | role=%s | payment_id=%s | transaction_id=%s | method=%s | status=%s | ip=%s',
                 self.request.user.email,
@@ -646,22 +653,9 @@ class PaymentCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateView):
                 payment.status,
                 get_client_ip(self.request),
             )
-            
-            # Activate the subscription
-            subscription = payment.subscription
-            if subscription.status == 'pending':
-                with transaction.atomic():
-                    # Expire any currently active subscription for this member
-                    # before activating the new one (prevents unique constraint violation
-                    # when member is renewing with an overlapping active subscription)
-                    expired_count = Subscription.objects.filter(
-                        member=subscription.member,
-                        status='active',
-                    ).exclude(pk=subscription.pk).update(status='expired')
-                    subscription.status = 'active'
-                    subscription.save()
-                
-                member_name = subscription.member.user.full_name
+
+            member_name = payment.subscription.member.user.full_name
+            if payment.subscription.status == 'active':
                 if expired_count:
                     messages.success(
                         self.request,
@@ -675,8 +669,7 @@ class PaymentCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateView):
             else:
                 messages.success(self.request, 'Payment recorded successfully!')
         else:
-            # For online payments, keep as pending
-            payment.save()
+            # Online payments remain pending until gateway confirmation.
             audit_logger.info(
                 'PAYMENT_CREATE | user=%s | role=%s | payment_id=%s | transaction_id=%s | method=%s | status=%s | ip=%s',
                 self.request.user.email,
@@ -691,7 +684,7 @@ class PaymentCreateView(AdminRequiredMixin, AdminCapabilityMixin, CreateView):
                 self.request,
                 'Payment initiated. Waiting for payment gateway confirmation.'
             )
-        
+
         return redirect(self.success_url)
     
     def get_context_data(self, **kwargs):
@@ -752,7 +745,7 @@ class AttendanceListView(StaffOrAdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Add active members for check-in dropdown
-        context['active_members'] = Member.objects.filter(is_active=True).select_related('user').order_by('user__full_name')
+        context['active_members'] = Member.objects.select_related('user').order_by('user__full_name')
         # Currently present count
         today = timezone.localdate()
         context['currently_present_count'] = Attendance.objects.filter(
@@ -760,6 +753,18 @@ class AttendanceListView(StaffOrAdminRequiredMixin, ListView):
             check_out__isnull=True
         ).count()
         return context
+
+
+class AttendanceQRView(StaffOrAdminRequiredMixin, View):
+    """Serve a QR code PNG image encoding the self check-in URL."""
+
+    def get(self, request):
+        url = request.build_absolute_uri(reverse('gym_management:self_checkin'))
+        qr = qrcode.make(url)
+        buf = io.BytesIO()
+        qr.save(buf, format='PNG')
+        buf.seek(0)
+        return HttpResponse(buf.read(), content_type='image/png')
 
 
 @login_required
@@ -786,7 +791,7 @@ def attendance_checkin(request):
         member_id = request.POST.get('member_id')
         
         try:
-            member = Member.objects.select_related('user').get(id=member_id, is_active=True)
+            member = Member.objects.select_related('user').get(id=member_id)
 
             attendance_record = AttendanceService.check_in_member(member)
             active_sub = member.subscriptions.filter(status='active').first()
@@ -1050,7 +1055,7 @@ class TrainerDashboardView(TrainerRequiredMixin, TemplateView):
         today = timezone.localdate()
         
         stats = {
-            'total_members': Member.objects.filter(is_active=True).count(),
+            'total_members': Member.all_objects.count(),  # Total registered members
             'active_subscriptions': Subscription.objects.filter(status='active').count(),
             'attendance_today': Attendance.objects.filter(date=today).count(),
         }
@@ -1104,12 +1109,10 @@ class StaffDashboardView(StaffRequiredMixin, TemplateView):
         
         # Today's stats
         context['today_checkins'] = Attendance.objects.filter(date=today).count()
-        context['total_members'] = Member.objects.filter(is_active=True).count()
+        context['total_members'] = Member.all_objects.count()  # Total registered members
         
         # Active members for dropdown (optimized)
-        context['active_members'] = Member.objects.filter(
-            is_active=True
-        ).select_related('user').order_by('user__full_name')
+        context['active_members'] = Member.objects.select_related('user').order_by('user__full_name')
         
         # Active members with subscription status (for validation)
         # Prefetch active subscriptions to avoid N+1
@@ -1119,9 +1122,7 @@ class StaffDashboardView(StaffRequiredMixin, TemplateView):
             to_attr='active_subs'
         )
         
-        context['members_with_subscription'] = Member.objects.filter(
-            is_active=True
-        ).select_related('user').prefetch_related(
+        context['members_with_subscription'] = Member.objects.select_related('user').prefetch_related(
             active_subscription_prefetch
         ).order_by('user__full_name')
         
@@ -1212,3 +1213,873 @@ class AttendanceReportView(StaffOrAdminRequiredMixin, TemplateView):
         
         return context
 
+
+# ==================== PHASE 2: ESEWA PAYMENT INTEGRATION ====================
+
+class EsewaPaymentInitiateView(AdminRequiredMixin, AdminCapabilityMixin, TemplateView):
+    """Initiate eSewa payment for a pending payment."""
+    template_name = 'gym_management/esewa_payment.html'
+    permission_checker = can_manage_payments
+    permission_denied_message = 'You do not have permission to process payments.'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        payment_id = self.kwargs.get('payment_id')
+        
+        payment = get_object_or_404(
+            Payment.objects.select_related('subscription__member__user', 'subscription__plan'),
+            pk=payment_id,
+            payment_method='esewa',
+            status='pending'
+        )
+        
+        from .services import EsewaPaymentService
+        
+        # Build callback URLs
+        success_url = self.request.build_absolute_uri(
+            reverse_lazy('gym_management:esewa_success')
+        )
+        failure_url = self.request.build_absolute_uri(
+            reverse_lazy('gym_management:esewa_failure')
+        )
+        
+        try:
+            payment_data = EsewaPaymentService.initiate_payment(payment, success_url, failure_url)
+            context['payment'] = payment
+            context['payment_url'] = payment_data['payment_url']
+            context['form_data'] = payment_data['form_data']
+        except ValueError as e:
+            messages.error(self.request, str(e))
+            context['error'] = str(e)
+        
+        return context
+
+
+@login_required
+def esewa_success_callback(request):
+    """Handle eSewa payment success callback."""
+    from .services import EsewaPaymentService
+    
+    # eSewa sends data via GET parameters
+    data = request.GET.get('data', '')
+    
+    if not data:
+        messages.error(request, 'Invalid payment callback data.')
+        return redirect('gym_management:payment_list')
+    
+    # Decode base64 data
+    import base64
+    import json as json_lib
+    
+    try:
+        decoded_data = json_lib.loads(base64.b64decode(data).decode())
+        
+        transaction_uuid = decoded_data.get('transaction_uuid')
+        esewa_transaction_code = decoded_data.get('transaction_code')
+        esewa_ref_id = decoded_data.get('ref_id', '')
+        signature = decoded_data.get('signature', '')
+        total_amount = decoded_data.get('total_amount')
+        status = decoded_data.get('status')
+        
+        if status != 'COMPLETE':
+            messages.warning(request, f'Payment status: {status}')
+            return redirect('gym_management:payment_list')
+        
+        success, message, payment = EsewaPaymentService.process_success_callback(
+            transaction_uuid=transaction_uuid,
+            esewa_transaction_code=esewa_transaction_code,
+            esewa_ref_id=esewa_ref_id,
+            signature=signature,
+            total_amount=total_amount
+        )
+        
+        if success:
+            messages.success(request, message)
+            if payment and payment.subscription:
+                return redirect('gym_management:member_detail', pk=payment.subscription.member.pk)
+        else:
+            messages.error(request, message)
+        
+    except Exception as e:
+        audit_logger.error(f'ESEWA_CALLBACK_ERROR | error={str(e)}')
+        messages.error(request, 'Error processing payment callback.')
+    
+    return redirect('gym_management:payment_list')
+
+
+@login_required
+def esewa_failure_callback(request):
+    """Handle eSewa payment failure callback."""
+    from .services import EsewaPaymentService
+    
+    # eSewa sends data via GET parameters
+    data = request.GET.get('data', '')
+    
+    if not data:
+        messages.error(request, 'Payment was not completed.')
+        return redirect('gym_management:payment_list')
+    
+    import base64
+    import json as json_lib
+    
+    try:
+        decoded_data = json_lib.loads(base64.b64decode(data).decode())
+        transaction_uuid = decoded_data.get('transaction_uuid', '')
+        
+        if transaction_uuid:
+            EsewaPaymentService.process_failure_callback(
+                transaction_uuid=transaction_uuid,
+                reason='User cancelled or payment failed.'
+            )
+        
+        messages.warning(request, 'eSewa payment was not completed.')
+        
+    except Exception as e:
+        audit_logger.error(f'ESEWA_FAILURE_CALLBACK_ERROR | error={str(e)}')
+        messages.error(request, 'Payment was cancelled or failed.')
+    
+    return redirect('gym_management:payment_list')
+
+
+# ==================== PHASE 2: ANALYTICS & REPORTING ====================
+
+class RevenueReportView(AdminRequiredMixin, AdminCapabilityMixin, TemplateView):
+    """Revenue analytics and reporting."""
+    template_name = 'gym_management/reports/revenue_report.html'
+    permission_checker = can_view_reports
+    permission_denied_message = 'You do not have permission to view reports.'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .services import AnalyticsService
+        
+        # Get date range from request
+        today = timezone.localdate()
+        date_range = self.request.GET.get('range', '30')
+        
+        if date_range == '7':
+            start_date = today - timedelta(days=7)
+        elif date_range == '30':
+            start_date = today - timedelta(days=30)
+        elif date_range == '90':
+            start_date = today - timedelta(days=90)
+        elif date_range == '365':
+            start_date = today - timedelta(days=365)
+        elif date_range == 'custom':
+            try:
+                start_date = date.fromisoformat(self.request.GET.get('start', str(today - timedelta(days=30))))
+                end_date = date.fromisoformat(self.request.GET.get('end', str(today)))
+            except ValueError:
+                start_date = today - timedelta(days=30)
+                end_date = today
+        else:
+            start_date = today - timedelta(days=30)
+        
+        if date_range != 'custom':
+            end_date = today
+        
+        report = AnalyticsService.get_revenue_report(start_date, end_date)
+        context.update(report)
+        context['date_range'] = date_range
+        
+        # Prepare chart data as JSON
+        context['daily_revenue_json'] = json.dumps([
+            {'date': str(d['date']), 'total': float(d['total'])}
+            for d in report['daily_revenue']
+        ])
+        
+        context['revenue_by_method_json'] = json.dumps([
+            {'method': m['payment_method'], 'total': float(m['total'])}
+            for m in report['revenue_by_method']
+        ])
+        
+        return context
+
+
+class MembershipAnalyticsView(AdminRequiredMixin, AdminCapabilityMixin, TemplateView):
+    """Membership analytics and insights."""
+    template_name = 'gym_management/reports/membership_analytics.html'
+    permission_checker = can_view_reports
+    permission_denied_message = 'You do not have permission to view reports.'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .services import AnalyticsService
+        
+        analytics = AnalyticsService.get_membership_analytics()
+        context.update(analytics)
+        
+        # Prepare chart data
+        context['subscription_by_plan_json'] = json.dumps([
+            {'plan': s['plan__name'], 'count': s['count']}
+            for s in analytics['subscription_by_plan']
+        ])
+        
+        context['subscription_by_status_json'] = json.dumps([
+            {'status': s['status'], 'count': s['count']}
+            for s in analytics['subscription_by_status']
+        ])
+        
+        return context
+
+
+class AttendanceAnalyticsView(AdminRequiredMixin, AdminCapabilityMixin, TemplateView):
+    """Attendance analytics and insights."""
+    template_name = 'gym_management/reports/attendance_analytics.html'
+    permission_checker = can_view_reports
+    permission_denied_message = 'You do not have permission to view reports.'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .services import AnalyticsService
+        
+        # Get date range
+        today = timezone.localdate()
+        date_range = self.request.GET.get('range', '30')
+        
+        if date_range == '7':
+            start_date = today - timedelta(days=7)
+        elif date_range == '30':
+            start_date = today - timedelta(days=30)
+        elif date_range == '90':
+            start_date = today - timedelta(days=90)
+        else:
+            start_date = today - timedelta(days=30)
+        
+        analytics = AnalyticsService.get_attendance_analytics(start_date, today)
+        context.update(analytics)
+        context['date_range'] = date_range
+        
+        # Prepare chart data
+        context['daily_attendance_json'] = json.dumps([
+            {'date': str(d['date']), 'count': d['count']}
+            for d in analytics['daily_attendance']
+        ])
+        
+        context['peak_hours_json'] = json.dumps([
+            {'hour': f"{h['hour']}:00", 'count': h['count']}
+            for h in analytics['peak_hours']
+        ])
+        
+        return context
+
+
+class InactiveMembersReportView(AdminRequiredMixin, AdminCapabilityMixin, ListView):
+    """Report of members with active subscriptions but no recent attendance."""
+    template_name = 'gym_management/reports/inactive_members.html'
+    context_object_name = 'inactive_members'
+    permission_checker = can_view_reports
+    permission_denied_message = 'You do not have permission to view reports.'
+    
+    def get_queryset(self):
+        from .services import AnalyticsService
+        days = int(self.request.GET.get('days', 14))
+        return AnalyticsService.get_inactive_members(days)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['days'] = int(self.request.GET.get('days', 14))
+        return context
+
+
+# ==================== PHASE 2: EXPORT SYSTEM ====================
+
+
+@login_required
+def export_payments_csv(request):
+    """Export payments to CSV."""
+    if not can_manage_payments(request.user):
+        raise PermissionDenied('You do not have permission to export payment data.')
+    
+    from .services import ExportService
+    
+    # Get date range from request
+    today = timezone.localdate()
+    start_str = request.GET.get('start', str(today - timedelta(days=30)))
+    end_str = request.GET.get('end', str(today))
+    
+    try:
+        start_date = date.fromisoformat(start_str)
+        end_date = date.fromisoformat(end_str)
+    except ValueError:
+        start_date = today - timedelta(days=30)
+        end_date = today
+    
+    csv_content = ExportService.export_payments_csv(start_date, end_date)
+    
+    response = HttpResponse(csv_content.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="payments_{start_date}_{end_date}.csv"'
+    
+    audit_logger.info(
+        'EXPORT_PAYMENTS | user=%s | role=%s | start=%s | end=%s | ip=%s',
+        request.user.email, get_user_role(request.user),
+        start_date, end_date, get_client_ip(request)
+    )
+    
+    return response
+
+
+@login_required
+def export_members_csv(request):
+    """Export members to CSV."""
+    if not can_manage_users(request.user):
+        raise PermissionDenied('You do not have permission to export member data.')
+    
+    from .services import ExportService
+    
+    include_subscription = request.GET.get('include_subscription', 'true').lower() == 'true'
+    
+    csv_content = ExportService.export_members_csv(include_subscription)
+    
+    response = HttpResponse(csv_content.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="members.csv"'
+    
+    audit_logger.info(
+        'EXPORT_MEMBERS | user=%s | role=%s | ip=%s',
+        request.user.email, get_user_role(request.user), get_client_ip(request)
+    )
+    
+    return response
+
+
+@login_required
+def export_attendance_csv(request):
+    """Export attendance to CSV."""
+    if not has_staff_or_admin_attendance_access(request.user):
+        raise PermissionDenied('You do not have permission to export attendance data.')
+    
+    from .services import ExportService
+    
+    # Get date range from request
+    today = timezone.localdate()
+    start_str = request.GET.get('start', str(today - timedelta(days=30)))
+    end_str = request.GET.get('end', str(today))
+    
+    try:
+        start_date = date.fromisoformat(start_str)
+        end_date = date.fromisoformat(end_str)
+    except ValueError:
+        start_date = today - timedelta(days=30)
+        end_date = today
+    
+    csv_content = ExportService.export_attendance_csv(start_date, end_date)
+    
+    response = HttpResponse(csv_content.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="attendance_{start_date}_{end_date}.csv"'
+    
+    audit_logger.info(
+        'EXPORT_ATTENDANCE | user=%s | role=%s | start=%s | end=%s | ip=%s',
+        request.user.email, get_user_role(request.user),
+        start_date, end_date, get_client_ip(request)
+    )
+    
+    return response
+
+
+@login_required
+def export_revenue_csv(request):
+    """Export revenue report to CSV."""
+    if not can_view_reports(request.user):
+        raise PermissionDenied('You do not have permission to export revenue data.')
+    
+    from .services import ExportService
+    
+    # Get date range from request
+    today = timezone.localdate()
+    start_str = request.GET.get('start', str(today - timedelta(days=30)))
+    end_str = request.GET.get('end', str(today))
+    
+    try:
+        start_date = date.fromisoformat(start_str)
+        end_date = date.fromisoformat(end_str)
+    except ValueError:
+        start_date = today - timedelta(days=30)
+        end_date = today
+    
+    csv_content = ExportService.export_revenue_report_csv(start_date, end_date)
+    
+    response = HttpResponse(csv_content.getvalue(), content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="revenue_{start_date}_{end_date}.csv"'
+    
+    audit_logger.info(
+        'EXPORT_REVENUE | user=%s | role=%s | start=%s | end=%s | ip=%s',
+        request.user.email, get_user_role(request.user),
+        start_date, end_date, get_client_ip(request)
+    )
+    
+    return response
+
+
+# ==================== PHASE 2: SUBSCRIPTION UPGRADE ====================
+
+class SubscriptionUpgradeView(AdminRequiredMixin, AdminCapabilityMixin, TemplateView):
+    """Upgrade a member's subscription to a higher plan."""
+    template_name = 'gym_management/subscription_upgrade.html'
+    permission_checker = can_manage_payments
+    permission_denied_message = 'You do not have permission to upgrade subscriptions.'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        subscription_id = self.kwargs.get('pk')
+        
+        subscription = get_object_or_404(
+            Subscription.objects.select_related('member__user', 'plan'),
+            pk=subscription_id,
+            status='active'
+        )
+        
+        context['subscription'] = subscription
+        context['current_plan'] = subscription.plan
+        context['member'] = subscription.member
+        
+        # Get available upgrade plans (higher priced)
+        context['upgrade_plans'] = MembershipPlan.objects.filter(
+            is_active=True,
+            price__gt=subscription.plan.price
+        ).order_by('price')
+        
+        # Calculate prorated credit
+        today = timezone.localdate()
+        if subscription.end_date > today:
+            remaining_days = (subscription.end_date - today).days
+            daily_rate = subscription.plan.price / subscription.plan.duration_days
+            context['credit_available'] = round(daily_rate * remaining_days, 2)
+        else:
+            context['credit_available'] = 0
+        
+        return context
+
+
+@login_required
+@require_POST
+def process_subscription_upgrade(request, pk):
+    """Process subscription upgrade."""
+    if not can_manage_payments(request.user):
+        raise PermissionDenied('You do not have permission to upgrade subscriptions.')
+    
+    from .services import SubscriptionService
+    
+    subscription = get_object_or_404(
+        Subscription.objects.select_related('member__user', 'plan'),
+        pk=pk,
+        status='active'
+    )
+    
+    new_plan_id = request.POST.get('new_plan_id')
+    payment_method = request.POST.get('payment_method', 'cash')
+    prorate = request.POST.get('prorate', 'true').lower() == 'true'
+    
+    try:
+        new_plan = MembershipPlan.objects.get(pk=new_plan_id, is_active=True)
+        
+        new_subscription, payment, credit_applied = SubscriptionService.upgrade_subscription(
+            member=subscription.member,
+            new_plan=new_plan,
+            payment_method=payment_method,
+            prorate=prorate
+        )
+        
+        audit_logger.info(
+            'SUBSCRIPTION_UPGRADE_COMPLETE | user=%s | role=%s | member_id=%s | old_plan=%s | new_plan=%s | credit=%s | ip=%s',
+            request.user.email, get_user_role(request.user),
+            subscription.member.id, subscription.plan.name, new_plan.name,
+            credit_applied, get_client_ip(request)
+        )
+        
+        messages.success(
+            request,
+            f'Subscription upgraded to {new_plan.name} for {subscription.member.user.full_name}! '
+            f'Credit applied: NPR {credit_applied:.2f}'
+        )
+        
+        if payment.payment_method == 'esewa' and payment.status == 'pending':
+            return redirect('gym_management:esewa_initiate', payment_id=payment.pk)
+        
+        return redirect('gym_management:member_detail', pk=subscription.member.pk)
+        
+    except MembershipPlan.DoesNotExist:
+        messages.error(request, 'Selected plan not found.')
+    except ValueError as e:
+        messages.error(request, str(e))
+    
+    return redirect('gym_management:subscription_upgrade', pk=pk)
+
+
+# ==================== PHASE 2: NOTIFICATIONS ====================
+
+class NotificationListView(MemberRequiredMixin, ListView):
+    """List notifications for the current member."""
+    template_name = 'gym_management/notifications.html'
+    context_object_name = 'notifications'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        from .models import Notification
+        member = self.request.user.member
+        return Notification.objects.filter(
+            member=member,
+            channel__in=['dashboard', 'both']
+        ).order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .models import Notification
+        member = self.request.user.member
+        context['unread_count'] = Notification.objects.filter(
+            member=member,
+            is_read=False,
+            channel__in=['dashboard', 'both']
+        ).count()
+        return context
+
+
+@login_required
+@require_POST
+def mark_notification_read(request, pk):
+    """Mark a notification as read."""
+    from .models import Notification
+    
+    # Ensure user has member profile
+    if not hasattr(request.user, 'member'):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return HttpResponseForbidden('Only members can access notifications.')
+        messages.error(request, 'Only members can access notifications.')
+        return redirect('gym_management:dashboard')
+    
+    notification = get_object_or_404(
+        Notification,
+        pk=pk,
+        member=request.user.member
+    )
+    
+    notification.mark_as_read()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return HttpResponse(status=204)
+    
+    return redirect('gym_management:notifications')
+
+
+@login_required
+@require_POST
+def mark_all_notifications_read(request):
+    """Mark all notifications as read."""
+    from .services import NotificationService
+    
+    # Ensure user has member profile
+    if not hasattr(request.user, 'member'):
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return HttpResponseForbidden('Only members can access notifications.')
+        messages.error(request, 'Only members can access notifications.')
+        return redirect('gym_management:dashboard')
+    
+    NotificationService.mark_notifications_read(request.user.member)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return HttpResponse(status=204)
+    
+    messages.success(request, 'All notifications marked as read.')
+    return redirect('gym_management:notifications')
+
+
+# ==================== PHASE 2: PAYMENT RECEIPT ====================
+
+class PaymentReceiptView(LoginRequiredMixin, DetailView):
+    """Generate payment receipt for members or admin."""
+    template_name = 'gym_management/payment_receipt.html'
+    context_object_name = 'payment'
+    
+    def get_queryset(self):
+        queryset = Payment.objects.select_related(
+            'subscription__member__user', 'subscription__plan'
+        )
+        
+        # Members can only view their own receipts
+        user = self.request.user
+        if hasattr(user, 'member'):
+            queryset = queryset.filter(subscription__member=user.member)
+        elif not (user.is_superuser or hasattr(user, 'adminprofile')):
+            # Non-admin, non-member users cannot view receipts
+            queryset = queryset.none()
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        payment = context['payment']
+        
+        # Format receipt data
+        context['receipt_number'] = f"RCP-{payment.transaction_id}"
+        context['issue_date'] = payment.completed_at or payment.initiated_at
+        
+        return context
+
+
+# ==================== MANAGEMENT COMMAND VIEWS (Admin Only) ====================
+
+@login_required
+@require_POST
+def run_expiry_notifications(request):
+    """Manually trigger expiry notification processing (admin only)."""
+    if not request.user.is_superuser:
+        raise PermissionDenied('Only superusers can run this command.')
+    
+    from .services import NotificationService, SubscriptionService
+    
+    # First expire any past-due subscriptions
+    expired_count = SubscriptionService.check_and_expire_subscriptions()
+    
+    # Then process notifications
+    stats = NotificationService.process_expiry_notifications()
+    
+    audit_logger.info(
+        'MANUAL_EXPIRY_NOTIFICATIONS | user=%s | expired=%s | notifications=%s | emails=%s | ip=%s',
+        request.user.email, expired_count,
+        stats['notifications_created'], stats['emails_sent'],
+        get_client_ip(request)
+    )
+    
+    messages.success(
+        request,
+        f'Processed expiry notifications: {expired_count} subscriptions expired, '
+        f'{stats["notifications_created"]} notifications created, '
+        f'{stats["emails_sent"]} emails sent.'
+    )
+    
+    return redirect('gym_management:admin_dashboard')
+
+
+# ==================== PHASE 3: QR SELF CHECK-IN/OUT ====================
+
+class SelfCheckInView(MemberRequiredMixin, TemplateView):
+    """Generate a short-lived check-in token and redirect to confirmation."""
+
+    def get(self, request, *args, **kwargs):
+        session = AttendanceService.create_qr_session(request.user.member, 'checkin')
+        audit_logger.info(
+            'SELF_CHECKIN_SESSION_CREATED | user=%s | member_id=%s | session_id=%s | expires_at=%s | ip=%s',
+            request.user.email,
+            request.user.member.id,
+            session.pk,
+            session.expires_at.isoformat(),
+            get_client_ip(request),
+        )
+        return redirect(f'{reverse("gym_management:self_checkin_confirm")}?token={session.pk}')
+
+
+class SelfCheckInConfirmView(MemberRequiredMixin, TemplateView):
+    """Render and process the geofenced, tokenized check-in confirmation flow."""
+
+    template_name = 'gym_management/self_checkin_confirm.html'
+
+    def _build_context(self, token, **kwargs):
+        context = self.get_context_data(**kwargs)
+        context['session_token'] = token
+
+        if not token:
+            context['error_message'] = AttendanceService.INVALID_QR_MESSAGE
+            return context
+
+        try:
+            session, member = AttendanceService.validate_qr_session(token, self.request.user, 'checkin')
+        except ValueError as exc:
+            context['error_message'] = str(exc)
+            return context
+
+        today = timezone.localdate()
+        context['session_token'] = str(session.pk)
+        context['session_expires_at'] = session.expires_at
+        context['active_subscription'] = member.subscriptions.select_related('plan').filter(status='active').first()
+        context['active_attendance'] = member.attendance_records.filter(
+            date=today,
+            check_out__isnull=True,
+        ).first()
+        return context
+
+    def get(self, request, *args, **kwargs):
+        context = self._build_context(request.GET.get('token'), **kwargs)
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        token = request.POST.get('token')
+        context = self._build_context(token, **kwargs)
+
+        if context.get('error_message'):
+            return self.render_to_response(context)
+
+        try:
+            attendance, active_sub, distance_meters = AttendanceService.process_self_check_in(
+                request.user,
+                token,
+                request.POST.get('latitude'),
+                request.POST.get('longitude'),
+            )
+            context['check_in_success'] = True
+            context['attendance'] = attendance
+            context['check_in_time'] = attendance.check_in
+            context['active_subscription'] = active_sub
+            context['distance_meters'] = round(distance_meters, 2)
+            audit_logger.info(
+                'SELF_CHECKIN_SUCCESS | user=%s | member_id=%s | attendance_id=%s | session_id=%s | distance_meters=%.2f | ip=%s',
+                request.user.email,
+                request.user.member.id,
+                attendance.id,
+                token,
+                distance_meters,
+                get_client_ip(request),
+            )
+        except ValueError as exc:
+            context['error_message'] = str(exc)
+            audit_logger.warning(
+                'SELF_CHECKIN_FAILED | user=%s | member_id=%s | session_id=%s | reason=%s | ip=%s',
+                request.user.email,
+                request.user.member.id,
+                token,
+                str(exc),
+                get_client_ip(request),
+            )
+
+        return self.render_to_response(context)
+
+
+class SelfCheckOutView(MemberRequiredMixin, TemplateView):
+    """Generate a short-lived check-out token and redirect to confirmation."""
+
+    def get(self, request, *args, **kwargs):
+        session = AttendanceService.create_qr_session(request.user.member, 'checkout')
+        audit_logger.info(
+            'SELF_CHECKOUT_SESSION_CREATED | user=%s | member_id=%s | session_id=%s | expires_at=%s | ip=%s',
+            request.user.email,
+            request.user.member.id,
+            session.pk,
+            session.expires_at.isoformat(),
+            get_client_ip(request),
+        )
+        return redirect(f'{reverse("gym_management:self_checkout_confirm")}?token={session.pk}')
+
+
+class SelfCheckOutConfirmView(MemberRequiredMixin, TemplateView):
+    """Render and process the geofenced, tokenized check-out confirmation flow."""
+
+    template_name = 'gym_management/self_checkout_confirm.html'
+
+    def _build_context(self, token, **kwargs):
+        context = self.get_context_data(**kwargs)
+        context['session_token'] = token
+
+        if not token:
+            context['error_message'] = AttendanceService.INVALID_QR_MESSAGE
+            return context
+
+        try:
+            session, member = AttendanceService.validate_qr_session(token, self.request.user, 'checkout')
+        except ValueError as exc:
+            context['error_message'] = str(exc)
+            return context
+
+        context['session_token'] = str(session.pk)
+        context['session_expires_at'] = session.expires_at
+        context['active_subscription'] = member.subscriptions.select_related('plan').filter(status='active').first()
+        context['open_attendance'] = member.attendance_records.filter(check_out__isnull=True).first()
+        return context
+
+    def get(self, request, *args, **kwargs):
+        context = self._build_context(request.GET.get('token'), **kwargs)
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        token = request.POST.get('token')
+        context = self._build_context(token, **kwargs)
+
+        if context.get('error_message'):
+            return self.render_to_response(context)
+
+        try:
+            attendance, distance_meters = AttendanceService.process_self_check_out(
+                request.user,
+                token,
+                request.POST.get('latitude'),
+                request.POST.get('longitude'),
+            )
+            duration = attendance.duration()
+            context['checkout_success'] = True
+            context['attendance'] = attendance
+            context['duration'] = duration
+            context['check_in_time'] = attendance.check_in
+            context['check_out_time'] = attendance.check_out
+            context['distance_meters'] = round(distance_meters, 2)
+            audit_logger.info(
+                'SELF_CHECKOUT_SUCCESS | user=%s | member_id=%s | attendance_id=%s | session_id=%s | duration_hours=%s | distance_meters=%.2f | ip=%s',
+                request.user.email,
+                request.user.member.id,
+                attendance.id,
+                token,
+                duration,
+                distance_meters,
+                get_client_ip(request),
+            )
+        except ValueError as exc:
+            context['error_message'] = str(exc)
+            audit_logger.warning(
+                'SELF_CHECKOUT_FAILED | user=%s | member_id=%s | session_id=%s | reason=%s | ip=%s',
+                request.user.email,
+                request.user.member.id,
+                token,
+                str(exc),
+                get_client_ip(request),
+            )
+
+        return self.render_to_response(context)
+
+
+# ==================== PHASE 3: MEMBER PAYMENTS HISTORY ====================
+
+class MyPaymentsView(MemberRequiredMixin, ListView):
+    """Member's payment history with filtering."""
+    template_name = 'gym_management/my_payments.html'
+    context_object_name = 'payments'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        member = self.request.user.member
+        queryset = Payment.objects.filter(
+            subscription__member=member
+        ).select_related('subscription__plan').order_by('-initiated_at')
+        
+        # Filter by status
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by date range
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+        if start_date:
+            queryset = queryset.filter(initiated_at__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(initiated_at__date__lte=end_date)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        member = self.request.user.member
+        
+        # Payment summary
+        summary = Payment.objects.filter(
+            subscription__member=member,
+            status='completed'
+        ).aggregate(
+            total_paid=Sum('amount'),
+            total_payments=Count('id')
+        )
+        
+        context['total_paid'] = summary['total_paid'] or 0
+        context['total_payments'] = summary['total_payments']
+        
+        # Preserve filter params
+        context['current_status'] = self.request.GET.get('status', '')
+        context['start_date'] = self.request.GET.get('start_date', '')
+        context['end_date'] = self.request.GET.get('end_date', '')
+        
+        return context

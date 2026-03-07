@@ -13,7 +13,7 @@
         <div>
             <h1 class="text-3xl font-bold text-white mb-2">{{ title }}</h1>
             <p class="text-text-secondary">
-                {% if is_update %}Edit membership subscription details and optionally record a payment{% else %}Assign a membership plan to a member{% endif %}
+                {% if is_update %}Update subscription details. Changing the plan creates a new pending subscription that must be paid separately.{% else %}Assign a membership plan to a member{% endif %}
             </p>
         </div>
         <a href="{% url 'gym_management:subscription_list' %}" 
@@ -23,19 +23,9 @@
     </div>
 
     <!-- Form Card -->
-    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto"
-         x-data="{
-             confirmOpen: false,
-             paymentMethod: '',
-             planChanged: false,
-             originalPlan: '{{ current_plan.name|escapejs|default:'' }}',
-             confirmAndSubmit(formEl) {
-                 this.confirmOpen = true;
-             }
-         }">
+    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto">
 
-        <form method="post" class="space-y-6" id="subscription-form"
-              @submit.prevent="{% if is_update %}confirmAndSubmit($el){% else %}$el.submit(){% endif %}">
+        <form method="post" class="space-y-6" id="subscription-form">
             {% csrf_token %}
             
             {% if form.non_field_errors %}
@@ -81,13 +71,13 @@
                         Membership Plan <span class="text-red-500">*</span>
                     </label>
                     {% if is_update %}
-                    <div @change="planChanged = ($event.target.options[$event.target.selectedIndex].text !== originalPlan)">
+                    <div id="plan-select-wrapper">
                         {{ form.plan }}
                     </div>
                     <!-- Plan changed warning -->
-                    <div x-show="planChanged" x-cloak
+                    <div id="plan-changed-warning" style="display:none;"
                          class="mt-2 flex items-start gap-2 bg-yellow-900/25 border border-yellow-600/50 rounded-lg px-3 py-2 text-yellow-300 text-xs">
-                        ⚠️ You are changing the membership plan. This does not automatically adjust dates — update the dates below if needed.
+                        ⚠️ Changing the membership plan will cancel this subscription and create a new pending subscription. Record payment separately.
                     </div>
                     {% else %}
                     {{ form.plan }}
@@ -98,7 +88,7 @@
                 </div>
                 
                 <!-- Start Date -->
-                <div class="grid grid-cols-1 {% if is_update %}md:grid-cols-2{% endif %} gap-6">
+                <div class="grid grid-cols-1 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-text-secondary mb-2">
                             Start Date <span class="text-red-500">*</span>
@@ -107,26 +97,10 @@
                         {% if form.start_date.errors %}
                         <p class="text-red-400 text-sm mt-1">{{ form.start_date.errors.0 }}</p>
                         {% endif %}
-                        {% if not is_update %}
                         <p class="text-xs text-text-muted mt-1">End date is auto-calculated from the selected plan's duration.</p>
-                        {% endif %}
                     </div>
-
-                    {% if is_update %}
-                    <div>
-                        <label class="block text-sm font-medium text-text-secondary mb-2">
-                            End Date <span class="text-red-500">*</span>
-                        </label>
-                        {{ form.end_date }}
-                        {% if form.end_date.errors %}
-                        <p class="text-red-400 text-sm mt-1">{{ form.end_date.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-                    {% endif %}
                 </div>
 
-                <!-- Real-time End Date Preview (create mode only) -->
-                {% if not is_update %}
                 <!-- Shown when both plan + start date are selected -->
                 <div id="sub-preview-card"
                      style="display:none"
@@ -159,40 +133,6 @@
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     Select a plan and start date to preview the calculated end date.
                 </div>
-                {% endif %}
-
-                {% if is_update %}
-                <!-- Status -->
-                <div>
-                    <label class="block text-sm font-medium text-text-secondary mb-2">
-                        Status <span class="text-red-500">*</span>
-                    </label>
-                    {{ form.status }}
-                    {% if form.status.errors %}
-                    <p class="text-red-400 text-sm mt-1">{{ form.status.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <!-- Payment Method (optional, for recording a new payment) -->
-                <div class="border border-dashed border-border rounded-xl p-5 space-y-3"
-                     x-data>
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-text-secondary">Record a Payment for This Update</p>
-                        <span class="text-xs text-text-muted">(Optional)</span>
-                    </div>
-                    <div @change="paymentMethod = $event.target.value">
-                        {{ form.payment_method }}
-                    </div>
-                    {% if form.payment_method.errors %}
-                    <p class="text-red-400 text-sm mt-1">{{ form.payment_method.errors.0 }}</p>
-                    {% endif %}
-                    <p class="text-xs text-text-muted">
-                        If selected, a payment receipt of <strong class="text-white">NPR {{ current_plan.price }}</strong>
-                        will be recorded for <strong class="text-white">{{ member_name }}</strong>.
-                        Cash/Card payments activate the subscription immediately.
-                    </p>
-                </div>
-                {% endif %}
             </div>
             
             <!-- Info Box -->
@@ -200,8 +140,7 @@
                 <p class="text-blue-400 text-sm">
                     ℹ️
                     {% if is_update %}
-                        Updating subscription status or plan does <strong>not</strong> auto-generate a payment record
-                        unless you select a payment method above.
+                        Updating a subscription does <strong>not</strong> create or modify payments. If you change the plan, a new pending subscription will be created and payment must be recorded from the payment page.
                     {% else %}
                         After creating the subscription, you'll be redirected to record a payment.
                         The subscription activates once payment is completed.
@@ -209,8 +148,6 @@
                 </p>
             </div>
 
-            {% if not is_update %}
-            <!-- Action Buttons (Create mode) -->
             <div class="flex justify-end gap-4 pt-4 border-t border-border">
                 <a href="{% url 'gym_management:subscription_list' %}" 
                    class="px-6 py-3 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
@@ -218,71 +155,13 @@
                 </a>
                 <button type="submit" 
                         class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors font-semibold">
-                    ＋ {{ submit_text }}
+                    {% if is_update %}{{ submit_text }}{% else %}＋ {{ submit_text }}{% endif %}
                 </button>
             </div>
-            {% else %}
-            <!-- Action Buttons (Update mode) — triggers confirmation dialog -->
-            <div class="flex justify-end gap-4 pt-4 border-t border-border">
-                <a href="{% url 'gym_management:subscription_list' %}" 
-                   class="px-6 py-3 bg-dark-bg border border-border rounded-lg text-white hover:bg-opacity-80 transition-colors">
-                    Cancel
-                </a>
-                <button type="button"
-                        @click="confirmOpen = true"
-                        class="px-6 py-3 bg-yellow-500 text-black font-semibold rounded-lg hover:bg-yellow-400 transition-colors">
-                    ✏️ {{ submit_text }}
-                </button>
-            </div>
-            {% endif %}
         </form>
     </div>
-
-    {% if is_update %}
-    <!-- ─── CONFIRMATION MODAL ─── -->
-    <div x-show="confirmOpen" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-         @keydown.escape.window="confirmOpen = false">
-        <div class="bg-card-bg border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-5"
-             @click.stop>
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-xl">⚠️</div>
-                <div>
-                    <h2 class="text-white font-bold text-lg">Confirm Subscription Update</h2>
-                    <p class="text-text-secondary text-sm mt-1">
-                        You are about to update the subscription for
-                        <strong class="text-white">{{ member_name }}</strong>.
-                        This action will modify their membership record.
-                    </p>
-                </div>
-            </div>
-
-            <div class="bg-dark-bg border border-border rounded-lg px-4 py-3 text-sm text-text-secondary space-y-1">
-                <p>• Plan changes take effect immediately.</p>
-                <p>• Status changes affect member access.</p>
-                <p x-show="paymentMethod" class="text-yellow-300">
-                    • A payment of <strong>NPR {{ current_plan.price }}</strong> will be recorded.
-                </p>
-            </div>
-
-            <p class="text-text-muted text-xs">Are you sure you want to proceed?</p>
-
-            <div class="flex gap-3 justify-end">
-                <button @click="confirmOpen = false"
-                        class="px-5 py-2 bg-dark-bg border border-border rounded-lg text-white text-sm hover:bg-white/5 transition-colors">
-                    Cancel
-                </button>
-                <button @click="confirmOpen = false; document.getElementById('subscription-form').submit()"
-                        class="px-5 py-2 bg-yellow-500 text-black text-sm font-semibold rounded-lg hover:bg-yellow-400 transition-colors">
-                    Yes, Update
-                </button>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 
-{% if not is_update %}
 <script>
 (function () {
     const PLAN_DATA = {{ plan_data_json|safe }};
@@ -332,6 +211,16 @@
     if (startInput) startInput.addEventListener('change', update);
     if (startInput) startInput.addEventListener('input',  update);
 
+    const originalPlanId = '{{ current_plan.id|default:"" }}';
+    const planWarning = document.getElementById('plan-changed-warning');
+    if (planSelect && planWarning && originalPlanId) {
+        const syncPlanWarning = () => {
+            planWarning.style.display = planSelect.value && planSelect.value !== originalPlanId ? 'flex' : 'none';
+        };
+        planSelect.addEventListener('change', syncPlanWarning);
+        syncPlanWarning();
+    }
+
     // Run after DOM is fully ready so initial field values (today's date) are readable
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', update);
@@ -340,5 +229,4 @@
     }
 })();
 </script>
-{% endif %}
 {% endblock %}

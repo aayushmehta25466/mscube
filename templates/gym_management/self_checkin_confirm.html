@@ -1,0 +1,154 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}Check In Confirmation - MScube Gym{% endblock %}
+{% block header_title %}Check In Confirmation{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_member_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6 animate-fade-in-up">
+    <div class="bg-card-bg border border-border rounded-xl p-8 shadow-sm text-center">
+        <div class="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+            <svg class="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 2.21-1.79 4-4 4s-4-1.79-4-4 1.79-4 4-4 4 1.79 4 4zm0 0c0 4 4 8 4 8s4-4 4-8a4 4 0 10-8 0z" />
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-white mb-2">Confirm Gym Check-In</h2>
+        <p class="text-text-secondary">We verify your location and QR session before creating attendance.</p>
+        {% if session_expires_at %}
+        <p class="text-xs text-text-muted mt-3">This session expires at {{ session_expires_at|date:"g:i:s A" }}.</p>
+        {% endif %}
+    </div>
+
+    {% if check_in_success %}
+    <div class="bg-success/10 border border-success/30 rounded-xl p-8 text-center">
+        <h3 class="text-xl font-bold text-white mb-2">Check-In Successful</h3>
+        <p class="text-text-secondary">You checked in at <span class="text-white font-semibold">{{ check_in_time|date:"g:i A" }}</span>.</p>
+        <p class="text-sm text-text-muted mt-3">Location verified within {{ distance_meters }} meters of the gym.</p>
+        {% if active_subscription %}
+        <p class="text-sm text-text-muted mt-2">Active plan: <span class="text-white">{{ active_subscription.plan.name }}</span></p>
+        {% endif %}
+        <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% url 'gym_management:member_dashboard' %}" class="px-6 py-3 bg-card-bg border border-border rounded-lg text-text-secondary hover:text-white transition-colors">Go to Dashboard</a>
+            <a href="{% url 'gym_management:self_checkout' %}" class="px-6 py-3 bg-primary hover:bg-accent text-white rounded-lg transition-colors">Generate Check-Out Token</a>
+        </div>
+    </div>
+    {% elif error_message %}
+    <div class="bg-error/10 border border-error/30 rounded-xl p-8 text-center">
+        <h3 class="text-xl font-bold text-white mb-2">Check-In Blocked</h3>
+        <p class="text-text-secondary">{{ error_message }}</p>
+        <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% url 'gym_management:self_checkin' %}" class="px-6 py-3 bg-primary hover:bg-accent text-white rounded-lg transition-colors">Generate New QR Session</a>
+            <a href="{% url 'gym_management:member_dashboard' %}" class="px-6 py-3 bg-card-bg border border-border rounded-lg text-text-secondary hover:text-white transition-colors">Go to Dashboard</a>
+        </div>
+    </div>
+    {% elif active_attendance %}
+    <div class="bg-warning/10 border border-warning/30 rounded-xl p-8 text-center">
+        <h3 class="text-xl font-bold text-white mb-2">Open Attendance Session Found</h3>
+        <p class="text-text-secondary">You are already checked in from <span class="text-white font-semibold">{{ active_attendance.check_in|date:"g:i A" }}</span>.</p>
+        <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{% url 'gym_management:self_checkout' %}" class="px-6 py-3 bg-primary hover:bg-accent text-white rounded-lg transition-colors">Generate Check-Out Token</a>
+            <a href="{% url 'gym_management:my_attendance' %}" class="px-6 py-3 bg-card-bg border border-border rounded-lg text-text-secondary hover:text-white transition-colors">Attendance History</a>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-card-bg border border-border rounded-xl p-8 shadow-sm">
+        <div class="space-y-4 text-center">
+            <h3 class="text-xl font-bold text-white">Location Verification Required</h3>
+            <p class="text-text-secondary">Allow location access so we can verify you are physically near the gym before checking you in.</p>
+            {% if active_subscription %}
+            <p class="text-sm text-text-muted">Active subscription: <span class="text-white">{{ active_subscription.plan.name }}</span> until {{ active_subscription.end_date|date:"M d, Y" }}</p>
+            {% endif %}
+        </div>
+
+        <div id="geo-status" class="mt-6 rounded-lg bg-dark-bg border border-border px-4 py-3 text-sm text-text-secondary text-center">
+            Requesting your location...
+        </div>
+
+        <form id="geo-form" method="post" class="mt-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="token" value="{{ session_token }}">
+            <input type="hidden" name="latitude" id="id_latitude">
+            <input type="hidden" name="longitude" id="id_longitude">
+            <button id="geo-submit" type="submit" disabled class="w-full px-6 py-4 bg-primary text-white rounded-xl font-semibold opacity-50 cursor-not-allowed">
+                Check In Now
+            </button>
+            <button id="geo-retry" type="button" class="hidden w-full px-6 py-3 bg-card-bg border border-border rounded-xl text-text-secondary hover:text-white transition-colors">
+                Retry Location Request
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const status = document.getElementById('geo-status');
+    const submitButton = document.getElementById('geo-submit');
+    const retryButton = document.getElementById('geo-retry');
+    const latitudeInput = document.getElementById('id_latitude');
+    const longitudeInput = document.getElementById('id_longitude');
+
+    if (!status || !submitButton || !latitudeInput || !longitudeInput) {
+        return;
+    }
+
+    const enableSubmit = () => {
+        submitButton.disabled = false;
+        submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+    };
+
+    const showError = (message) => {
+        status.textContent = message;
+        status.className = 'mt-6 rounded-lg bg-error/10 border border-error/30 px-4 py-3 text-sm text-error text-center';
+        if (retryButton) {
+            retryButton.classList.remove('hidden');
+        }
+    };
+
+    const showReady = (message) => {
+        status.textContent = message;
+        status.className = 'mt-6 rounded-lg bg-success/10 border border-success/30 px-4 py-3 text-sm text-success text-center';
+        enableSubmit();
+        if (retryButton) {
+            retryButton.classList.add('hidden');
+        }
+    };
+
+    const requestLocation = () => {
+        status.textContent = 'Requesting your location...';
+        status.className = 'mt-6 rounded-lg bg-dark-bg border border-border px-4 py-3 text-sm text-text-secondary text-center';
+
+        if (!navigator.geolocation) {
+            showError('Location unavailable on this device.');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                latitudeInput.value = position.coords.latitude;
+                longitudeInput.value = position.coords.longitude;
+                showReady('Location captured. You can complete check-in now.');
+            },
+            (error) => {
+                if (error.code === error.PERMISSION_DENIED) {
+                    showError('Location permission denied. Enable location access to continue.');
+                    return;
+                }
+                showError('Location unavailable. Please retry while near the gym.');
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
+
+    requestLocation();
+    if (retryButton) {
+        retryButton.addEventListener('click', requestLocation);
+    }
+});
+</script>
+{% endblock %}

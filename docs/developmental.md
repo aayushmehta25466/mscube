@@ -26,10 +26,33 @@ A comprehensive gym management system handling member registration, trainer/staf
 
 **Authentication System:**
 - Custom User model with email + username login
-- Email verification mandatory via django-allauth
-- Email/password authentication only (no social providers)
-- Brute force protection (django-axes) - 5 attempts = 1 hour lockout
+- Email/password authentication only — no OAuth, no social providers (Google/Facebook removed)
+- Email verification controlled by `ACCOUNT_EMAIL_VERIFICATION_MODE` environment variable
+- Brute force protection (django-axes) — 5 attempts = 1 hour lockout
 - Signal-driven profile creation post email verification
+
+**Email Verification Configuration Policy:**
+
+| Environment | `DEBUG` | `ACCOUNT_EMAIL_VERIFICATION_MODE` | Behaviour |
+|-------------|---------|-----------------------------------|-----------|
+| Development | `True`  | `optional` or `none`             | Verification skipped — useful for rapid local testing |
+| Testing     | `True`  | `optional` or `none`             | Tests can create users without email confirmation |
+| Production  | `False` | **must be `mandatory`**          | Server refuses to start if set to anything else |
+
+Production guard (in `mscube/settings.py`):
+```python
+if not DEBUG and ACCOUNT_EMAIL_VERIFICATION != 'mandatory':
+    raise ImproperlyConfigured(
+        "Email verification must be mandatory in production."
+    )
+```
+
+To run tests without email delivery:
+```bash
+# .env
+DEBUG=True
+ACCOUNT_EMAIL_VERIFICATION_MODE=none
+```
 
 **Profile Management:**
 - Member Profile (emergency contact, DOB, address)
@@ -371,6 +394,86 @@ A comprehensive gym management system handling member registration, trainer/staf
 - [ ] CAPTCHA for public forms
 - [ ] Content Security Policy (CSP) headers
 - [ ] Regular security audit schedule
+
+---
+
+## Production Security Guardrails
+
+### Why This Exists
+
+Accidental insecure production deployments are a common source of real-world security incidents.  The guardrail system prevents the Django server from starting if any critical security setting is misconfigured, catching deployment mistakes at startup rather than at exploit time.
+
+### How It Works
+
+The guardrail is implemented in `core/security/production_guardrails.py` and called from the bottom of `mscube/settings.py`:
+
+```python
+from core.security.production_guardrails import validate_production_settings
+validate_production_settings(globals())
+```
+
+**Development / testing (`DEBUG=True`):** The guardrail skips all validation and returns immediately.  CI pipelines and local development are completely unaffected.
+
+**Production (`DEBUG=False`):** Every rule is evaluated in order.  The first failing rule raises `ImproperlyConfigured` with a detailed explanation — the server refuses to start until the problem is corrected.
+
+### Rules Validated in Production
+
+| Setting | Requirement | Reason |
+|---------|-------------|--------|
+| `DEBUG` | Must be `False` | Disables debug output that leaks stack traces |
+| `ALLOWED_HOSTS` | Must not be empty | Prevents HTTP Host header attacks |
+| `SECRET_KEY` | Non-empty, ≥ 50 chars, no placeholder text | Protects cryptographic signatures |
+| `ACCOUNT_EMAIL_VERIFICATION` | Must be `"mandatory"` | Prevents unverified users from accessing the system |
+| `SESSION_COOKIE_SECURE` | Must be `True` | Ensures session cookies are HTTPS-only |
+| `CSRF_COOKIE_SECURE` | Must be `True` | Ensures CSRF tokens are HTTPS-only |
+| `SECURE_SSL_REDIRECT` | Must be `True` | Forces all HTTP traffic to HTTPS |
+| `SECURE_HSTS_SECONDS` | Must be `> 0` | Activates HTTP Strict Transport Security headers |
+| `X_FRAME_OPTIONS` | Must be `"DENY"` | Prevents clickjacking attacks |
+
+### Unsafe SECRET_KEY Patterns Rejected
+
+The guardrail detects and rejects:
+- Empty or missing key
+- Keys shorter than 50 characters
+- Keys containing: `django-insecure-`, `your-secret-key`, `replace-with`, `change-in-production`, `example`, `placeholder`, `insecure`, `changeme`, `devkey`, `testkey`
+
+### Safe Production Configuration
+
+Minimum required environment variables for production:
+
+```bash
+DEBUG=False
+SECRET_KEY=<generate-with-get_random_secret_key()>
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+ACCOUNT_EMAIL_VERIFICATION_MODE=mandatory
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com
+USE_POSTGRES=True
+DB_NAME=mscube_db
+DB_USER=mscube_user
+DB_PASSWORD=<strong-password>
+USE_SMTP_EMAIL=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=<app-password>
+```
+
+All security cookie settings (`SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, `X_FRAME_OPTIONS`) are set automatically by `mscube/settings.py` when `DEBUG=False` — no additional environment variables are required for those.
+
+### Development Configuration (Skip Guardrails)
+
+```bash
+# .env (development)
+DEBUG=True
+SECRET_KEY=any-local-dev-key
+ACCOUNT_EMAIL_VERIFICATION_MODE=none  # or optional
+```
+
+### Startup Success Log
+
+When all rules pass, the following INFO-level message is written to `logs/security.log` and the console:
+
+```
+Production security guardrails validated successfully. All 8 security rules passed.
+```
 
 ---
 

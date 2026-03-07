@@ -33,6 +33,32 @@ def getenv_bool(name, default=False):
         f"Invalid boolean value for {name}: {value}. Use one of true/false, 1/0, yes/no, on/off."
     )
 
+
+def getenv_float(name, default=None):
+    value = os.getenv(name)
+    if value is None:
+        return default
+
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f"Invalid float value for {name}: {value}."
+        ) from exc
+
+
+def getenv_int(name, default=None):
+    value = os.getenv(name)
+    if value is None:
+        return default
+
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ImproperlyConfigured(
+            f"Invalid integer value for {name}: {value}."
+        ) from exc
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -69,6 +95,7 @@ INSTALLED_APPS = [
     # 'django_ratelimit',  # Rate limiting (TODO: Configure Redis for production)
     
     # Local apps
+    'core.apps.CoreConfig',
     'gym_website.apps.GymWebsiteConfig',
     'accounts.apps.AccountsConfig',
     'gym_management.apps.GymManagementConfig',
@@ -177,6 +204,24 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+# Gym geofencing and QR session settings
+GYM_LATITUDE = getenv_float('GYM_LATITUDE', 0.0 if DEBUG else None)
+GYM_LONGITUDE = getenv_float('GYM_LONGITUDE', 0.0 if DEBUG else None)
+GYM_RADIUS_METERS = getenv_float('GYM_RADIUS_METERS', 100.0)
+GYM_QR_SESSION_TTL_SECONDS = getenv_int('GYM_QR_SESSION_TTL_SECONDS', 60)
+
+if GYM_LATITUDE is None or GYM_LONGITUDE is None:
+    raise ImproperlyConfigured(
+        'GYM_LATITUDE and GYM_LONGITUDE must be configured for attendance geolocation validation.'
+    )
+
+if GYM_RADIUS_METERS is None or GYM_RADIUS_METERS <= 0:
+    raise ImproperlyConfigured('GYM_RADIUS_METERS must be greater than 0.')
+
+if GYM_QR_SESSION_TTL_SECONDS is None or GYM_QR_SESSION_TTL_SECONDS <= 0:
+    raise ImproperlyConfigured('GYM_QR_SESSION_TTL_SECONDS must be greater than 0.')
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -232,6 +277,16 @@ if ACCOUNT_EMAIL_VERIFICATION_MODE not in ALLOWED_EMAIL_VERIFICATION_MODES:
         'Invalid ACCOUNT_EMAIL_VERIFICATION_MODE. Allowed values: mandatory, optional, none.'
     )
 
+# Production safety guard: mandatory verification cannot be relaxed in production.
+# During development/testing, set DEBUG=True to allow optional or none.
+# In all production deployments (DEBUG=False), this value must be "mandatory" or the
+# server will refuse to start.
+if not DEBUG and ACCOUNT_EMAIL_VERIFICATION_MODE != 'mandatory':
+    raise ImproperlyConfigured(
+        "Email verification must be mandatory in production. "
+        "Set ACCOUNT_EMAIL_VERIFICATION_MODE=mandatory or keep DEBUG=True for development/testing."
+    )
+
 account_email_required = getenv_bool('ACCOUNT_EMAIL_REQUIRED', True)
 ACCOUNT_EMAIL_VERIFICATION = ACCOUNT_EMAIL_VERIFICATION_MODE
 
@@ -273,6 +328,22 @@ AXES_FAILURE_LIMIT = 5  # Lock after 5 failed attempts
 AXES_COOLOFF_TIME = 1  # Lock for 1 hour
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # Lock by both username and IP
 AXES_RESET_ON_SUCCESS = True
+
+# ==================== eSewa Payment Gateway Settings ====================
+# eSewa Merchant ID - get from eSewa merchant dashboard
+ESEWA_MERCHANT_ID = os.getenv('ESEWA_MERCHANT_ID', 'EPAYTEST')
+
+# eSewa Secret Key - NEVER commit real key to version control
+ESEWA_SECRET_KEY = os.getenv('ESEWA_SECRET_KEY', '8gBm/:&EnhH.1/q')
+
+# eSewa Base URL - use sandbox for testing, production URL for live
+# Sandbox: https://rc-epay.esewa.com.np
+# Production: https://epay.esewa.com.np
+ESEWA_BASE_URL = os.getenv('ESEWA_BASE_URL', 'https://rc-epay.esewa.com.np')
+
+# Email settings for notifications
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@mscube.com')
+
 
 # Security Settings (Production)
 if not DEBUG:
@@ -317,6 +388,18 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'core.security.production_guardrails': {
+            'handlers': ['console', 'security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
+
+# ==================== PRODUCTION SECURITY GUARDRAILS ====================
+# Validates all security-critical settings at startup.
+# No-op when DEBUG=True (development / CI / testing environments).
+# Raises ImproperlyConfigured on the first failing rule when DEBUG=False.
+from core.security.production_guardrails import validate_production_settings  # noqa: E402
+validate_production_settings(globals())

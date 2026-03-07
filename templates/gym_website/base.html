@@ -7,58 +7,117 @@
     <title>{% block title %}MSCUBEGYM - Transform Your Body{% endblock %}</title>
     {% load static %}
     <link rel="stylesheet" href="{% static "css/output.css" %}">
+    <style>
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
 
 <body class="bg-dark-bg text-text-primary font-sans leading-relaxed overflow-x-hidden">
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 bg-dark-bg/95 backdrop-blur-sm z-50 border-b border-border">
+    <nav class="navbar fixed top-0 left-0 right-0 bg-dark-bg/95 backdrop-blur-sm z-50 border-b border-border">
         <div class="max-w-[1400px] mx-auto px-5">
             <div class="flex justify-between items-center py-4">
-                <div class="flex items-center gap-3 text-2xl font-bold tracking-wide">
-                    <div class="flex items-center">
-                        <img src="{% static "images/logo.png" %}" alt="MSCUBEGYM Logo"
-                            class="w-[60px] h-[60px] object-contain">
-                    </div>
+                <!-- Logo -->
+                <a href="{% url 'index' %}" class="flex items-center gap-3 text-2xl font-bold tracking-wide">
+                    <img src="{% static "images/logo.png" %}" alt="MSCUBEGYM Logo" class="w-[60px] h-[60px] object-contain">
                     <span class="text-text-primary">MSCUBEGYM</span>
-                </div>
+                </a>
 
-                <ul class="hidden md:flex list-none gap-8 items-center" id="navMenu">
-                    <li><a href="{% url 'index' %}"
-                            class="text-text-primary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'index' %}after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Home</a>
-                    </li>
-                        <li><a href="{% url 'about' %}"
-                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'about' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">About</a>
-                        </li>
-                        <li><a href="{% url 'programs' %}"
-                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'programs' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Programs</a>
-                        </li>
-                        <li><a href="{% url 'trainers' %}"
-                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'trainers' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Trainers</a>
-                        </li>
-                        <li><a href="{% url 'events' %}"
-                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'events' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Events</a>
-                        </li>
-                        <li><a href="{% url 'notifications' %}"
-                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'notifications' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Notifications</a>
-                        </li>
-                        <li><a href="{% url 'contact' %}"
-                            class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'contact' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Contact Us</a>
-                        </li>
+                <!-- Desktop nav links -->
+                <ul class="hidden md:flex list-none gap-8 items-center">
+                    <li><a href="{% url 'index' %}" class="text-text-primary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'index' %}after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Home</a></li>
+                    <li><a href="{% url 'about' %}" class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'about' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">About</a></li>
+                    <li><a href="{% url 'programs' %}" class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'programs' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Programs</a></li>
+                    <li><a href="{% url 'trainers' %}" class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'trainers' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Trainers</a></li>
+                    <li><a href="{% url 'events' %}" class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'events' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Events</a></li>
+                    <li><a href="{% url 'notifications' %}" class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'notifications' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Notifications</a></li>
+                    <li><a href="{% url 'contact' %}" class="text-text-secondary font-medium transition-colors relative after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:bg-primary {% if request.resolver_match.url_name == 'contact' %}text-text-primary after:w-full{% else %}after:w-0 hover:after:w-full{% endif %} hover:text-text-primary">Contact Us</a></li>
                 </ul>
 
+                <!-- Desktop CTA -->
                 <div class="hidden md:flex items-center gap-3">
-                    <a href="{% url 'account_login' %}"
-                        class="px-5 py-2 rounded-lg font-semibold text-text-primary border border-border hover:border-primary hover:text-white transition-colors">Login</a>
-                    <a href="{% url 'account_signup' %}"
-                        class="px-5 py-2 rounded-lg font-semibold bg-primary text-white transition-all hover:bg-accent hover:-translate-y-0.5 shadow-md hover:shadow-lg">Signup</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'accounts_dashboard_redirect' %}" class="px-5 py-2 rounded-lg font-semibold bg-primary text-white transition-all hover:bg-accent hover:-translate-y-0.5 shadow-md hover:shadow-lg">Dashboard</a>
+                    {% else %}
+                        <a href="{% url 'account_login' %}" class="px-5 py-2 rounded-lg font-semibold text-text-primary border border-border hover:border-primary hover:text-white transition-colors">Login</a>
+                        <a href="{% url 'account_signup' %}" class="px-5 py-2 rounded-lg font-semibold bg-primary text-white transition-all hover:bg-accent hover:-translate-y-0.5 shadow-md hover:shadow-lg">Signup</a>
+                    {% endif %}
                 </div>
 
-                <div class="flex flex-col gap-1.5 cursor-pointer md:hidden" id="hamburger">
+                <!-- Hamburger (mobile only) -->
+                <button type="button" id="hamburger" class="hamburger flex flex-col gap-1.5 cursor-pointer md:hidden" aria-label="Toggle navigation" aria-expanded="false">
                     <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>
                     <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>
                     <span class="block w-6 h-0.5 bg-white rounded-full transition-all"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile menu panel — absolutely positioned below the fixed navbar -->
+        <div id="mobileNavPanel" style="display:none;" class="md:hidden absolute top-full left-0 right-0 bg-card-bg border-b border-border shadow-2xl">
+            <div class="px-4 py-4 space-y-1">
+
+                <p class="px-3 text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Navigation</p>
+
+                <a href="{% url 'index' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'index' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    Home
+                </a>
+
+                <a href="{% url 'about' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'about' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    About
+                </a>
+
+                <a href="{% url 'programs' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'programs' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    Programs
+                </a>
+
+                <a href="{% url 'trainers' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'trainers' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Trainers
+                </a>
+
+                <a href="{% url 'events' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'events' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    Events
+                </a>
+
+                <a href="{% url 'notifications' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'notifications' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    Notifications
+                </a>
+
+                <a href="{% url 'contact' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors {% if request.resolver_match.url_name == 'contact' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-white/5 hover:text-white{% endif %}">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    Contact Us
+                </a>
+
+            </div>
+
+            <!-- Auth / Dashboard section -->
+            <div class="px-4 pb-4 pt-2 border-t border-border">
+                {% if user.is_authenticated %}
+                <a href="{% url 'accounts_dashboard_redirect' %}" class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                    Go to Dashboard
+                </a>
+                {% else %}
+                <div class="flex flex-col gap-2">
+                    <a href="{% url 'account_login' %}" class="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg border border-border text-text-primary hover:border-primary hover:text-white transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+                        Login
+                    </a>
+                    <a href="{% url 'account_signup' %}" class="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-lg bg-primary text-white hover:bg-accent transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                        Sign Up
+                    </a>
                 </div>
+                {% endif %}
             </div>
         </div>
     </nav>

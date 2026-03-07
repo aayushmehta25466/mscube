@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 from decimal import Decimal
 import uuid
 from accounts.models import Member
@@ -118,6 +119,13 @@ class Subscription(models.Model):
         if self.status == 'active' and self.end_date < timezone.localdate():
             self.status = 'expired'
             self.save()
+    
+    def delete(self, using=None, keep_parents=False):
+        """Prevent deletion of subscriptions - financial records must be preserved."""
+        raise ValidationError(
+            f"Cannot delete subscription {self.pk}. Financial records must be preserved for audit compliance. "
+            "Use cancel() to deactivate subscriptions."
+        )
 
 
 class Payment(models.Model):
@@ -188,13 +196,10 @@ class Payment(models.Model):
     
     def mark_completed(self):
         """Mark payment as completed."""
-        self.status = 'completed'
-        self.completed_at = timezone.now()
-        self.save()
-        
-        # Activate the subscription if payment is completed
-        if self.subscription.status == 'pending':
-            self.subscription.activate()
+        from .services import PaymentService
+
+        payment, _ = PaymentService.complete_payment(self)
+        return payment
     
     def mark_failed(self, reason=''):
         """Mark payment as failed."""
@@ -214,6 +219,12 @@ class Payment(models.Model):
             if not self.transaction_id:
                 raise ValueError('Unable to generate unique transaction ID.')
         super().save(*args, **kwargs)
+    
+    def delete(self, using=None, keep_parents=False):
+        """Prevent deletion of payment records - financial records must be preserved."""
+        raise ValidationError(
+            f"Cannot delete payment {self.transaction_id}. Financial records must be preserved for audit compliance."
+        )
 
 
 class Attendance(models.Model):
@@ -221,7 +232,7 @@ class Attendance(models.Model):
     
     member = models.ForeignKey(
         Member,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='attendance_records'
     )
     check_in = models.DateTimeField(auto_now_add=True)
@@ -270,3 +281,132 @@ class Attendance(models.Model):
         if not self.check_out:
             self.check_out = timezone.now()
             self.save()
+
+
+class CheckInSession(models.Model):
+    """Short-lived QR token used to authorize self check-in and check-out."""
+
+    ACTION_CHECKIN = 'checkin'
+    ACTION_CHECKOUT = 'checkout'
+    ACTION_CHOICES = [
+        (ACTION_CHECKIN, 'Check In'),
+        (ACTION_CHECKOUT, 'Check Out'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    member = models.ForeignKey(
+        Member,
+        on_delete=models.PROTECT,
+        related_name='checkin_sessions'
+    )
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'checkin_sessions'
+        verbose_name = 'Check-In Session'
+        verbose_name_plural = 'Check-In Sessions'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['member', 'action', 'used']),
+            models.Index(fields=['expires_at']),
+            models.Index(fields=['used']),
+        ]
+
+    def __str__(self):
+        return f"{self.member.user.full_name} - {self.action} ({'used' if self.used else 'open'})"
+
+    def is_expired(self):
+        """Check if the session token has expired."""
+        return self.expires_at <= timezone.now()
+
+    def mark_used(self):
+        """Mark the session token as consumed."""
+        if not self.used:
+            self.used = True
+            self.save(update_fields=['used'])
+
+
+class Notification(models.Model):
+    """Notification system for subscription expiry alerts and general notifications."""
+    
+    NOTIFICATION_TYPE_CHOICES = [
+        ('expiry_7_days', 'Subscription Expires in 7 Days'),
+        ('expiry_3_days', 'Subscription Expires in 3 Days'),
+        ('expiry_1_day', 'Subscription Expires Tomorrow'),
+        ('expired', 'Subscription Expired'),
+        ('payment_received', 'Payment Received'),
+        ('payment_failed', 'Payment Failed'),
+        ('subscription_activated', 'Subscription Activated'),
+        ('subscription_cancelled', 'Subscription Cancelled'),
+        ('general', 'General Notification'),
+    ]
+    
+    CHANNEL_CHOICES = [
+        ('email', 'Email'),
+        ('dashboard', 'Dashboard'),
+        ('both', 'Email & Dashboard'),
+    ]
+    
+    member = models.ForeignKey(
+        Member,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    subscription = models.ForeignKey(
+        'Subscription',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications'
+    )
+    notification_type = models.CharField(
+        max_length=30,
+        choices=NOTIFICATION_TYPE_CHOICES
+    )
+    channel = models.CharField(
+        max_length=20,
+        choices=CHANNEL_CHOICES,
+        default='dashboard'
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    
+    # Tracking
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    email_sent = models.BooleanField(default=False)
+    email_sent_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'notifications'
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['member', 'is_read']),
+            models.Index(fields=['notification_type']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['member', 'subscription', 'notification_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.member.user.full_name} - {self.get_notification_type_display()}"
+    
+    def mark_as_read(self):
+        """Mark notification as read."""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+    
+    def mark_email_sent(self):
+        """Mark email as sent."""
+        if not self.email_sent:
+            self.email_sent = True
+            self.email_sent_at = timezone.now()
+            self.save(update_fields=['email_sent', 'email_sent_at'])

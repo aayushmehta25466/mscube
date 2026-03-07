@@ -21,27 +21,7 @@
     </div>
 
     <!-- Form Card -->
-    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto"
-         x-data="{
-            selectedSubscription: null,
-            subscriptions: {},
-            init() {
-                // Build lookup map from hidden JSON data
-                document.querySelectorAll('#subscription-data [data-sub]').forEach(el => {
-                    this.subscriptions[el.dataset.sub] = {
-                        member: el.dataset.member,
-                        plan: el.dataset.plan,
-                        price: el.dataset.price,
-                        status: el.dataset.status,
-                        start: el.dataset.start,
-                        end: el.dataset.end
-                    };
-                });
-            },
-            updateInfo(val) {
-                this.selectedSubscription = val ? this.subscriptions[val] : null;
-            }
-         }">
+    <div class="bg-darker-bg border border-border rounded-xl p-8 max-w-3xl mx-auto">
 
         <!-- Hidden data store for Alpine -->
         <div id="subscription-data" class="hidden">
@@ -71,7 +51,7 @@
                     <label class="block text-sm font-medium text-text-secondary mb-2">
                         Select Member &amp; Subscription <span class="text-red-500">*</span>
                     </label>
-                    <div @change="updateInfo($event.target.value)">
+                    <div id="subscription-change-wrapper">
                         {{ form.subscription }}
                     </div>
                     {% if form.subscription.errors %}
@@ -83,34 +63,31 @@
                 </div>
 
                 <!-- Dynamic Subscription Info -->
-                <div x-show="selectedSubscription" x-cloak
+                <div id="subscription-info-panel" style="display:none;"
                      class="bg-primary/10 border border-primary/30 rounded-xl p-5 space-y-3">
                     <h3 class="text-sm font-semibold text-primary uppercase tracking-wide">Payment Summary</h3>
                     <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                         <div>
                             <p class="text-text-muted text-xs uppercase tracking-wide">Member</p>
-                            <p class="text-white font-semibold" x-text="selectedSubscription?.member"></p>
+                            <p id="info-member" class="text-white font-semibold"></p>
                         </div>
                         <div>
                             <p class="text-text-muted text-xs uppercase tracking-wide">Plan</p>
-                            <p class="text-white font-semibold" x-text="selectedSubscription?.plan"></p>
+                            <p id="info-plan" class="text-white font-semibold"></p>
                         </div>
                         <div>
                             <p class="text-text-muted text-xs uppercase tracking-wide">Period</p>
-                            <p class="text-white font-mono text-xs"
-                               x-text="(selectedSubscription?.start ?? '') + ' → ' + (selectedSubscription?.end ?? '')"></p>
+                            <p id="info-period" class="text-white font-mono text-xs"></p>
                         </div>
                         <div>
                             <p class="text-text-muted text-xs uppercase tracking-wide">Subscription Status</p>
-                            <p class="font-semibold"
-                               :class="selectedSubscription?.status === 'pending' ? 'text-yellow-400' : 'text-green-400'"
-                               x-text="selectedSubscription?.status === 'pending' ? '⏳ Pending' : '✅ Active'"></p>
+                            <p id="info-status" class="font-semibold"></p>
                         </div>
                     </div>
                     <div class="border-t border-primary/20 pt-3 flex items-center justify-between">
                         <p class="text-text-secondary text-sm">Amount to Charge</p>
                         <p class="text-2xl font-black text-white">
-                            NPR <span x-text="Number(selectedSubscription?.price).toLocaleString('en-NP', {minimumFractionDigits: 2})"></span>
+                            NPR <span id="info-price"></span>
                         </p>
                     </div>
                     <p class="text-xs text-text-muted">
@@ -155,4 +132,61 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    // Build subscription lookup from hidden data attributes
+    var subscriptions = {};
+    document.querySelectorAll('#subscription-data [data-sub]').forEach(function (el) {
+        subscriptions[el.dataset.sub] = {
+            member: el.dataset.member,
+            plan:   el.dataset.plan,
+            price:  el.dataset.price,
+            status: el.dataset.status,
+            start:  el.dataset.start,
+            end:    el.dataset.end
+        };
+    });
+
+    var panel      = document.getElementById('subscription-info-panel');
+    var elMember   = document.getElementById('info-member');
+    var elPlan     = document.getElementById('info-plan');
+    var elPeriod   = document.getElementById('info-period');
+    var elStatus   = document.getElementById('info-status');
+    var elPrice    = document.getElementById('info-price');
+    var wrapper    = document.getElementById('subscription-change-wrapper');
+
+    function updateInfo(val) {
+        var sub = val ? subscriptions[val] : null;
+        if (!panel) return;
+        if (!sub) {
+            panel.style.display = 'none';
+            return;
+        }
+        elMember.textContent  = sub.member;
+        elPlan.textContent    = sub.plan;
+        elPeriod.textContent  = (sub.start || '') + ' \u2192 ' + (sub.end || '');
+        if (sub.status === 'pending') {
+            elStatus.textContent  = '\u23f3 Pending';
+            elStatus.className    = 'font-semibold text-yellow-400';
+        } else {
+            elStatus.textContent  = '\u2705 Active';
+            elStatus.className    = 'font-semibold text-green-400';
+        }
+        elPrice.textContent   = Number(sub.price).toLocaleString('en-NP', { minimumFractionDigits: 2 });
+        panel.style.display   = 'block';
+    }
+
+    if (wrapper) {
+        var select = wrapper.querySelector('select');
+        if (select) {
+            select.addEventListener('change', function () { updateInfo(this.value); });
+            // Show info if a value is already selected (e.g. on page re-load with errors)
+            if (select.value) { updateInfo(select.value); }
+        }
+    }
+})();
+</script>
 {% endblock %}

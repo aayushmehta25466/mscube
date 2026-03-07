@@ -93,13 +93,15 @@ redirect_url = get_dashboard_url(request.user)  # Returns role-specific dashboar
 
 **Authentication Backend Stack** - [mscube/settings.py](../mscube/settings.py):
 1. `django.contrib.auth.backends.ModelBackend` (standard Django)
-2. `allauth.account.auth_backends.AuthenticationBackend` (OAuth)
+2. `allauth.account.auth_backends.AuthenticationBackend` (email/password via allauth)
 3. `axes.backends.AxesStandaloneBackend` (brute force protection - 5 attempts = 1 hour lockout)
 
 **Allauth Configuration:**
-- `ACCOUNT_EMAIL_VERIFICATION = 'mandatory'` - users MUST verify email before system access
-- Login methods: username OR email accepted
-- Social auth providers configured: Google, Facebook (requires OAuth credentials in settings)
+- `ACCOUNT_EMAIL_VERIFICATION_MODE` environment variable controls verification behaviour (default: `mandatory`).
+  - Development/testing: set `DEBUG=True` to allow `optional` or `none`.
+  - Production (`DEBUG=False`): must be `mandatory` — server raises `ImproperlyConfigured` otherwise.
+- Login methods: username OR email accepted.
+- Email/password only — social providers (Google, Facebook, OAuth) are not installed and not supported.
 
 **Database:**
 - Default: SQLite (development)

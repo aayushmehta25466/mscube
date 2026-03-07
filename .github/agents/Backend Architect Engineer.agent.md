@@ -227,7 +227,7 @@ If adding new environment variable:
 
 Whenever a new task is assigned, do this before implementation:
 
-1. Open `/review/` and identify the latest review log entry in `/review/review_log_01`.
+1. Open `/review/` and identify the latest review log entry in `/review/review_log_**.md`.
 2. Extract unresolved items from:
    - `## ⚠ Missing or Partial Implementations`
    - `## 🔄 Schema Drift Check`
@@ -236,7 +236,7 @@ Whenever a new task is assigned, do this before implementation:
 3. Verify whether each unresolved finding is already solved in current code.
 4. If unresolved issues directly impact the new task scope, prioritize fixing or containing them first.
 5. Only then proceed with the newly assigned implementation task.
-6. After completing the task, append a dated update to `/review/review_log_01` with current status and verdict.
+6. After completing the task, append a dated and create a new review log to `/review/review_log_**.md` with current status and verdict.
 
 This gate is required for every new assignment and cannot be skipped.
 

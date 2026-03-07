@@ -1,0 +1,208 @@
+{% extends "layouts/dashboard_base.html" %}
+
+{% block title %}My Payments - MScube Gym{% endblock %}
+{% block header_title %}Payment History{% endblock %}
+
+{% block sidebar_menu %}
+{% include "gym_management/_member_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 animate-fade-in-up">
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Total Paid -->
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-text-muted text-sm font-medium uppercase tracking-wider">Total Paid</span>
+                    <h3 class="text-3xl font-bold text-white mt-1">NPR {{ total_paid|floatformat:0 }}</h3>
+                </div>
+                <span class="p-3 bg-success/10 rounded-xl text-success">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </span>
+            </div>
+            <p class="text-xs text-text-muted mt-4">Lifetime completed payments</p>
+        </div>
+
+        <!-- Total Transactions -->
+        <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-text-muted text-sm font-medium uppercase tracking-wider">Transactions</span>
+                    <h3 class="text-3xl font-bold text-white mt-1">{{ total_payments }}</h3>
+                </div>
+                <span class="p-3 bg-primary/10 rounded-xl text-primary">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                </span>
+            </div>
+            <p class="text-xs text-text-muted mt-4">Successful payments made</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-card-bg border border-border rounded-xl p-6 shadow-sm">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[150px]">
+                <label for="status" class="block text-sm font-medium text-text-secondary mb-2">Status</label>
+                <select name="status" id="status" class="w-full px-4 py-2 bg-dark-bg border border-border rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    <option value="">All Status</option>
+                    <option value="completed" {% if current_status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="failed" {% if current_status == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="refunded" {% if current_status == 'refunded' %}selected{% endif %}>Refunded</option>
+                </select>
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label for="start_date" class="block text-sm font-medium text-text-secondary mb-2">From Date</label>
+                <input type="date" name="start_date" id="start_date" value="{{ start_date }}" 
+                    class="w-full px-4 py-2 bg-dark-bg border border-border rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label for="end_date" class="block text-sm font-medium text-text-secondary mb-2">To Date</label>
+                <input type="date" name="end_date" id="end_date" value="{{ end_date }}" 
+                    class="w-full px-4 py-2 bg-dark-bg border border-border rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="px-6 py-2 bg-primary hover:bg-accent text-white rounded-lg transition-colors">
+                    Filter
+                </button>
+                <a href="{% url 'gym_management:my_payments' %}" class="px-6 py-2 bg-card-bg border border-border text-text-secondary hover:text-white rounded-lg transition-colors">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="bg-card-bg border border-border rounded-xl overflow-hidden shadow-sm">
+        <div class="p-6 border-b border-border flex items-center justify-between">
+            <h3 class="font-bold text-white text-lg">Payment History</h3>
+            <span class="text-sm text-text-muted">{{ payments|length }} payments</span>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-dark-bg text-text-muted text-xs uppercase font-semibold">
+                    <tr>
+                        <th class="px-6 py-4">Transaction ID</th>
+                        <th class="px-6 py-4">Date</th>
+                        <th class="px-6 py-4">Plan</th>
+                        <th class="px-6 py-4">Method</th>
+                        <th class="px-6 py-4 text-right">Amount</th>
+                        <th class="px-6 py-4 text-center">Status</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                    {% for payment in payments %}
+                    <tr class="hover:bg-dark-bg/50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="text-white font-mono text-sm">{{ payment.transaction_id|truncatechars:16 }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-white block">{{ payment.initiated_at|date:"M d, Y" }}</span>
+                            <span class="text-text-muted text-xs">{{ payment.initiated_at|date:"g:i A" }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-text-secondary">{{ payment.subscription.plan.name }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-2 text-text-secondary text-sm">
+                                {% if payment.payment_method == 'cash' %}
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                                {% elif payment.payment_method == 'card' %}
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                {% elif payment.payment_method == 'esewa' %}
+                                <svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                {% else %}
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                                {% endif %}
+                                {{ payment.get_payment_method_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <span class="text-white font-semibold">NPR {{ payment.amount|floatformat:0 }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if payment.status == 'completed' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-success/10 text-success">
+                                <span class="w-1.5 h-1.5 rounded-full bg-success mr-2"></span>
+                                Completed
+                            </span>
+                            {% elif payment.status == 'pending' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                                <span class="w-1.5 h-1.5 rounded-full bg-warning mr-2"></span>
+                                Pending
+                            </span>
+                            {% elif payment.status == 'failed' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-error/10 text-error">
+                                <span class="w-1.5 h-1.5 rounded-full bg-error mr-2"></span>
+                                Failed
+                            </span>
+                            {% elif payment.status == 'refunded' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary mr-2"></span>
+                                Refunded
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            {% if payment.status == 'completed' %}
+                            <a href="{% url 'gym_management:payment_receipt' pk=payment.pk %}" 
+                               class="inline-flex items-center gap-1 text-primary hover:text-accent text-sm transition-colors">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Receipt
+                            </a>
+                            {% else %}
+                            <span class="text-text-muted text-sm">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center">
+                                <svg class="w-12 h-12 text-text-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                <p class="text-text-muted">No payments found</p>
+                                <p class="text-sm text-text-muted mt-1">Your payment history will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-border flex items-center justify-between">
+            <p class="text-sm text-text-muted">
+                Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+            </p>
+            <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+                   class="px-4 py-2 bg-dark-bg border border-border rounded-lg text-text-secondary hover:text-white transition-colors">
+                    Previous
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+                   class="px-4 py-2 bg-primary hover:bg-accent text-white rounded-lg transition-colors">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

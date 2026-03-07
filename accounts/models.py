@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 class UserManager(BaseUserManager):
@@ -81,6 +82,46 @@ class User(AbstractUser):
 
 # ==================== PROFILE MODELS ====================
 
+class ActiveMemberQuerySet(models.QuerySet):
+    """Custom QuerySet for Member model with soft-delete filtering."""
+    
+    def active(self):
+        """Return only active members."""
+        return self.filter(is_active=True)
+    
+    def inactive(self):
+        """Return only inactive members."""
+        return self.filter(is_active=False)
+    
+    def with_subscription_details(self):
+        """Optimize queries by prefetching subscription data."""
+        return self.select_related('user').prefetch_related(
+            'subscriptions',
+            'subscriptions__plan',
+            'subscriptions__payments'
+        )
+    
+    def with_active_subscription(self):
+        """Return members with at least one active subscription."""
+        return self.filter(subscriptions__status='active').distinct()
+
+
+class ActiveMemberManager(models.Manager):
+    """Manager that returns only active members by default."""
+    
+    def get_queryset(self):
+        """Return only active members using custom QuerySet."""
+        return ActiveMemberQuerySet(self.model, using=self._db).filter(is_active=True)
+    
+    def active(self):
+        """Explicit active member filter."""
+        return self.get_queryset()
+    
+    def with_subscription_details(self):
+        """Chainable prefetch for subscription data."""
+        return self.get_queryset().with_subscription_details()
+
+
 class BaseProfile(models.Model):
     """Abstract base model for all profile types."""
     
@@ -111,14 +152,36 @@ class BaseProfile(models.Model):
 
 
 class Member(BaseProfile):
-    """Member profile for gym members."""
+    """Member profile for gym members with soft delete support."""
     
     emergency_contact = models.CharField(max_length=150, blank=True, help_text="Emergency contact name and phone")
+    deactivated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when member account was deactivated"
+    )
+    
+    # Custom managers - Order matters! First manager becomes default for admin
+    objects = ActiveMemberManager()  # Default: only active members
+    all_objects = models.Manager()   # Access all members including inactive
     
     class Meta:
         db_table = 'members'
         verbose_name = 'Member'
         verbose_name_plural = 'Members'
+    
+    def delete(self, using=None, keep_parents=False):
+        """Prevent hard deletion of members with financial history."""
+        # Check if member has subscriptions or payments
+        if hasattr(self, 'subscriptions'):
+            if self.subscriptions.exists():
+                raise ValidationError(
+                    f"Cannot delete member {self.user.full_name} with existing subscriptions. "
+                    "Use deactivate_member() instead."
+                )
+        
+        # If no financial records, allow deletion
+        return super().delete(using=using, keep_parents=keep_parents)
 
 
 class Trainer(BaseProfile):

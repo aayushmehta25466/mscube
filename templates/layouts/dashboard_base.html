@@ -10,22 +10,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Alpine.js for interactivity -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="h-full overflow-hidden flex bg-dark-bg text-text-primary" x-data="{ sidebarOpen: false }">
+<body class="h-full overflow-hidden flex bg-dark-bg text-text-primary">
 
     <!-- Mobile sidebar backdrop -->
-    <div x-show="sidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black/80 z-40 lg:hidden" @click="sidebarOpen = false" x-cloak></div>
+    <div id="dashboardSidebarBackdrop" class="fixed inset-0 bg-black/80 z-40 hidden lg:hidden"></div>
 
     <!-- Sidebar -->
-    <div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 z-50 w-72 bg-card-bg border-r border-border transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0">
-        <div class="flex items-center justify-center h-16 px-6 border-b border-border bg-card-bg">
+    <div id="dashboardSidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-card-bg border-r border-border transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 lg:static lg:inset-0 flex flex-col">
+        <div class="flex items-center justify-between h-16 px-6 border-b border-border bg-card-bg">
             <a href="/" class="text-2xl font-black tracking-wider text-white">MSCUBE<span class="text-primary">GYM</span></a>
+            <button id="dashboardSidebarClose" type="button" class="lg:hidden text-text-secondary hover:text-white" aria-label="Close sidebar">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
         </div>
         
         <nav class="p-4 space-y-1 overflow-y-auto h-[calc(100vh-4rem)]">
@@ -62,7 +62,7 @@
         <!-- Top Navbar -->
         <header class="flex items-center justify-between h-16 px-6 border-b border-border bg-dark-bg/80 backdrop-blur-md sticky top-0 z-30">
             <div class="flex items-center gap-4">
-                <button @click="sidebarOpen = true" class="lg:hidden text-text-secondary hover:text-white">
+                <button id="dashboardSidebarOpen" type="button" class="lg:hidden text-text-secondary hover:text-white" aria-label="Open sidebar">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
                 <h1 class="text-xl font-bold text-white truncate">{% block header_title %}Dashboard{% endblock %}</h1>
@@ -70,14 +70,20 @@
             
             <div class="flex items-center gap-4">
                 <!-- Notifications -->
-                <button class="relative p-2 text-text-secondary hover:text-white transition-colors rounded-full hover:bg-white/5">
+                {% if user_role == 'member' %}
+                <a href="{% url 'gym_management:notifications' %}" class="relative p-2 text-text-secondary hover:text-white transition-colors rounded-full hover:bg-white/5 {% if request.resolver_match.url_name == 'notifications' %}text-white bg-white/5{% endif %}" aria-label="Notifications">
                     <span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full ring-2 ring-dark-bg"></span>
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                </button>
+                </a>
+                {% else %}
+                <span class="relative p-2 text-text-secondary/30 rounded-full cursor-not-allowed" title="Notifications are only available for members">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                </span>
+                {% endif %}
                 
                 <!-- User Menu -->
-                <div class="relative" x-data="{ userMenuOpen: false }" @click.outside="userMenuOpen = false">
-                    <button @click="userMenuOpen = !userMenuOpen" class="flex items-center gap-3 ml-2 rounded-lg hover:bg-white/5 px-2 py-1.5 transition-colors">
+                <div class="relative" id="userMenuWrapper">
+                    <button id="userMenuBtn" type="button" class="flex items-center gap-3 ml-2 rounded-lg hover:bg-white/5 px-2 py-1.5 transition-colors">
                         <div class="hidden md:block text-right">
                             <p class="text-sm font-medium text-white">{{ request.user.full_name|default:request.user.username }}</p>
                             <p class="text-xs font-semibold
@@ -99,8 +105,8 @@
                         <svg class="hidden md:block w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
 
-                    <div x-show="userMenuOpen" x-transition
-                         class="absolute right-0 mt-2 w-56 bg-card-bg border border-border rounded-xl shadow-lg overflow-hidden z-50" x-cloak>
+                    <div id="userMenuDropdown" style="display:none;"
+                         class="absolute right-0 mt-2 w-56 bg-card-bg border border-border rounded-xl shadow-lg overflow-hidden z-50">
                         <div class="px-4 py-3 border-b border-border">
                             <p class="text-sm font-semibold text-white truncate">{{ request.user.full_name|default:request.user.username }}</p>
                             <p class="text-xs text-text-muted truncate">{{ request.user.email }}</p>
@@ -120,6 +126,10 @@
                             <a href="{% url 'accounts_profile_update' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 Settings
+                            </a>
+                            <a href="{% url 'accounts_password_change' %}" class="flex items-center gap-3 px-4 py-2 text-sm text-text-secondary hover:text-white hover:bg-white/5 transition-colors">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                                Change Password
                             </a>
                         </div>
                         <div class="border-t border-border">
@@ -142,5 +152,89 @@
         </main>
     </div>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('dashboardSidebar');
+            const backdrop = document.getElementById('dashboardSidebarBackdrop');
+            const openButton = document.getElementById('dashboardSidebarOpen');
+            const closeButton = document.getElementById('dashboardSidebarClose');
+            const mobileMedia = window.matchMedia('(min-width: 1024px)');
+
+            if (!sidebar || !backdrop || !openButton || !closeButton) {
+                return;
+            }
+
+            const closeSidebar = () => {
+                if (!mobileMedia.matches) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+                backdrop.classList.add('hidden');
+            };
+
+            const openSidebar = () => {
+                if (mobileMedia.matches) {
+                    return;
+                }
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            };
+
+            const syncSidebarState = () => {
+                if (mobileMedia.matches) {
+                    sidebar.classList.remove('-translate-x-full');
+                    backdrop.classList.add('hidden');
+                    return;
+                }
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            };
+
+            openButton.addEventListener('click', openSidebar);
+            closeButton.addEventListener('click', closeSidebar);
+            backdrop.addEventListener('click', closeSidebar);
+
+            sidebar.querySelectorAll('a').forEach((link) => {
+                link.addEventListener('click', () => {
+                    if (!mobileMedia.matches) {
+                        closeSidebar();
+                    }
+                });
+            });
+
+            if (mobileMedia.addEventListener) {
+                mobileMedia.addEventListener('change', syncSidebarState);
+            } else if (mobileMedia.addListener) {
+                mobileMedia.addListener(syncSidebarState);
+            }
+            syncSidebarState();
+
+            // User menu dropdown
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userMenuDropdown = document.getElementById('userMenuDropdown');
+            const userMenuWrapper = document.getElementById('userMenuWrapper');
+
+            if (userMenuBtn && userMenuDropdown) {
+                userMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = userMenuDropdown.style.display !== 'none';
+                    userMenuDropdown.style.display = isOpen ? 'none' : 'block';
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (userMenuWrapper && !userMenuWrapper.contains(e.target)) {
+                        userMenuDropdown.style.display = 'none';
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        userMenuDropdown.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

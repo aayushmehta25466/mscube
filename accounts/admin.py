@@ -71,7 +71,7 @@ class UserAdmin(BaseUserAdmin):
 class MemberAdmin(admin.ModelAdmin):
     """Admin for Member profiles."""
     
-    list_display = ('user', 'get_email', 'get_phone', 'joined_date', 'age', 'is_active')
+    list_display = ('user', 'get_email', 'get_phone', 'joined_date', 'age', 'is_active', 'deactivated_at')
     list_filter = ('is_active', 'joined_date')
     search_fields = ('user__username', 'user__email', 'user__full_name', 'emergency_contact')
     ordering = ('-joined_date',)
@@ -79,10 +79,14 @@ class MemberAdmin(admin.ModelAdmin):
     fieldsets = (
         ('User', {'fields': ('user',)}),
         ('Personal Information', {'fields': ('date_of_birth', 'address', 'emergency_contact')}),
-        ('Status', {'fields': ('is_active', 'joined_date')}),
+        ('Status', {'fields': ('is_active', 'joined_date', 'deactivated_at')}),
     )
     
-    readonly_fields = ('joined_date',)
+    readonly_fields = ('joined_date', 'deactivated_at')
+    
+    def get_queryset(self, request):
+        """Override to show all members (including inactive) in admin."""
+        return Member.all_objects.select_related('user')
     
     def get_email(self, obj):
         return obj.user.email

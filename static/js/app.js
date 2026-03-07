@@ -1,27 +1,46 @@
 // Mobile Navigation Toggle
 const hamburger = document.getElementById('hamburger');
-const navMenu = document.getElementById('navMenu');
+const mobileNavPanel = document.getElementById('mobileNavPanel');
 
-if (hamburger && navMenu) {
-    hamburger.addEventListener('click', () => {
-        hamburger.classList.toggle('active');
-        navMenu.classList.toggle('active');
+if (hamburger && mobileNavPanel) {
+    const closeMobileMenu = () => {
+        mobileNavPanel.style.display = 'none';
+        hamburger.classList.remove('active');
+        hamburger.setAttribute('aria-expanded', 'false');
+    };
+
+    const openMobileMenu = () => {
+        mobileNavPanel.style.display = 'block';
+        hamburger.classList.add('active');
+        hamburger.setAttribute('aria-expanded', 'true');
+    };
+
+    hamburger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (mobileNavPanel.style.display === 'none' || mobileNavPanel.style.display === '') {
+            openMobileMenu();
+        } else {
+            closeMobileMenu();
+        }
     });
 
-    // Close menu when clicking on a link
-    const navLinks = navMenu.querySelectorAll('a');
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
-        });
+    // Close when a nav link inside the panel is clicked
+    mobileNavPanel.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', closeMobileMenu);
     });
 
-    // Close menu when clicking outside
+    // Close when clicking anywhere outside the navbar
     document.addEventListener('click', (e) => {
-        if (!hamburger.contains(e.target) && !navMenu.contains(e.target)) {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
+        const navbar = document.querySelector('.navbar');
+        if (navbar && !navbar.contains(e.target)) {
+            closeMobileMenu();
+        }
+    });
+
+    // Reset when viewport widens to desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+            closeMobileMenu();
         }
     });
 }
@@ -31,6 +50,10 @@ let lastScroll = 0;
 const navbar = document.querySelector('.navbar');
 
 window.addEventListener('scroll', () => {
+    if (!navbar) {
+        return;
+    }
+
     const currentScroll = window.pageYOffset;
     
     if (currentScroll <= 0) {
